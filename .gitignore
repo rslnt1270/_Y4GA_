@@ -5,3 +5,6 @@ __pycache__/
 
 # Ignorar archivos PDF de Uber por privacidad
 resumen_15_22_dic.pdf
+
+# Ignorar auto-guardados de Jupyter
+.ipynb_checkpoints/

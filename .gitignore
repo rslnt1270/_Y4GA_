@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+.DS_Store
+
+# Ignorar archivos PDF de Uber por privacidad
+resumen_15_22_dic.pdf

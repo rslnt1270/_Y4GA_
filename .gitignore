@@ -8,3 +8,19 @@ resumen_15_22_dic.pdf
 
 # Ignorar auto-guardados de Jupyter
 .ipynb_checkpoints/
+
+# Ignorar la carpeta completa de recibos
+pdf_uber/
+.Rproj.user
+# Sesiones de navegador - NUNCA subir
+uber_session/
+*.db
+*.db-journal
+gs_session.json
+Local State
+Last Version
+
+# Datos sensibles
+*.xlsx
+YAGA_DataSet_*.csv
+YAGA_Viajes_*.csv

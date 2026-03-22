@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f1923" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>YAGA</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root {
+      --bg:        #0f1923;
+      --surface:   #1a2636;
+      --border:    #253447;
+      --accent:    #00e5a0;
+      --warn:      #f5a623;
+      --danger:    #e05555;
+      --text:      #e8f0f7;
+      --muted:     #6b8299;
+      --font:      'Inter', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { font-size: 1.3rem; font-weight: 800; letter-spacing: 3px; color: var(--accent); }
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* ── CAPA 1 — INMEDIATA ── */
+    .layer-1 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .metric-big {
+      background: var(--surface);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .metric-big .label {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+    }
+    .metric-big .value {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--accent);
+    }
+    .metric-big .value.money::before { content: '$'; font-size: 1.2rem; vertical-align: super; }
+
+    /* ── CAPA 2 — CONTEXTUAL ── */
+    .layer-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .metric-mid {
+      background: var(--bg);
+      padding: 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .metric-mid .label { font-size: .6rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .metric-mid .value { font-size: 1.4rem; font-weight: 700; color: var(--warn); }
+
+    /* ── CAPA 3 — ANALÍTICA ── */
+    .layer-3 {
+      background: var(--bg);
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .layer-3 .section-title {
+      font-size: .6rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: .85rem;
+    }
+    .breakdown-row .bl { color: var(--muted); }
+    .breakdown-row .bv { font-weight: 700; }
+    .breakdown-row.net .bv { color: var(--accent); font-size: 1.1rem; }
+    .breakdown-row.gasto .bv { color: var(--danger); }
+    .divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* ── VIAJES RECIENTES ── */
+    .trips-section {
+      flex: 1;
+      padding: 16px 20px;
+      overflow-y: auto;
+    }
+    .section-title {
+      font-size: .6rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .trip-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: var(--surface);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      border-left: 3px solid var(--accent);
+    }
+    .trip-item .plataforma {
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+    .trip-item .monto {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .trip-item .monto::before { content: '$'; font-size: .7rem; }
+    .trip-item .metodo {
+      font-size: .7rem;
+      color: var(--muted);
+      background: var(--border);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: .85rem;
+      padding: 30px 0;
+    }
+
+    /* ── VOICE BAR ── */
+    .voice-bar {
+      position: sticky;
+      bottom: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .voice-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .voice-input:focus { border-color: var(--accent); }
+    .voice-input::placeholder { color: var(--muted); }
+
+    .btn-mic {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent);
+      color: #0f1923;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .15s, opacity .15s;
+      flex-shrink: 0;
+    }
+    .btn-mic:active { transform: scale(.92); }
+    .btn-mic.listening {
+      background: var(--danger);
+      animation: pulse 1s infinite;
+    }
+
+    .btn-send {
+      width: 46px; height: 46px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #0f1923;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity .15s;
+      flex-shrink: 0;
+    }
+    .btn-send:active { opacity: .7; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      top: 16px; left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: .85rem;
+      max-width: 90vw;
+      text-align: center;
+      transition: transform .3s ease;
+      z-index: 999;
+      pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--accent); color: var(--accent); }
+    #toast.error   { border-color: var(--danger); color: var(--danger); }
+
+    /* ── LOADING ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 6px;
+      height: 2.4rem;
+      width: 80%;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <span class="logo">YAGA</span>
+    <span id="fecha" style="font-size:.75rem;color:var(--muted)"></span>
+    <div class="status-dot" id="statusDot"></div>
+  </header>
+
+  <!-- CAPA 1: INMEDIATA -->
+  <div class="layer-1">
+    <div class="metric-big">
+      <span class="label">Viajes</span>
+      <span class="value" id="totalViajes">—</span>
+    </div>
+    <div class="metric-big">
+      <span class="label">Ingreso bruto</span>
+      <span class="value money" id="ingresosBrutos">—</span>
+    </div>
+  </div>
+
+  <!-- CAPA 2: CONTEXTUAL -->
+  <div class="layer-2">
+    <div class="metric-mid">
+      <span class="label">Gastos</span>
+      <span class="value" id="totalGastos" style="color:var(--danger)">—</span>
+    </div>
+    <div class="metric-mid">
+      <span class="label">Ganancia neta</span>
+      <span class="value" id="gananciaNeta">—</span>
+    </div>
+  </div>
+
+  <!-- CAPA 3: ANALÍTICA -->
+  <div class="layer-3">
+    <div class="section-title">Desglose</div>
+    <div class="breakdown">
+      <div class="breakdown-row">
+        <span class="bl">Ingresos brutos</span>
+        <span class="bv" id="b-brutos" style="color:var(--text)">$0.00</span>
+      </div>
+      <div class="breakdown-row gasto">
+        <span class="bl">− Gastos operativos</span>
+        <span class="bv" id="b-gastos">$0.00</span>
+      </div>
+      <div class="divider"></div>
+      <div class="breakdown-row net">
+        <span class="bl">= Ganancia neta real</span>
+        <span class="bv" id="b-neta">$0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIAJES RECIENTES -->
+  <div class="trips-section">
+    <div class="section-title">Viajes de hoy</div>
+    <div id="tripsList">
+      <div class="empty-state">Sin viajes registrados aún</div>
+    </div>
+  </div>
+
+  <!-- VOICE BAR -->
+  <div class="voice-bar">
+    <button class="btn-mic" id="btnMic" title="Hablar">🎤</button>
+    <input
+      class="voice-input"
+      id="cmdInput"
+      type="text"
+      placeholder="viaje uber efectivo 90…"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+    />
+    <button class="btn-send" id="btnSend" title="Enviar">↑</button>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────
+  const API = 'http://3.19.35.76:8000/api/v1';
+  const CONDUCTOR_ID = 'default';
+
+  // ── DOM ─────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const totalViajes   = $('totalViajes');
+  const ingresosBrutos= $('ingresosBrutos');
+  const totalGastos   = $('totalGastos');
+  const gananciaNeta  = $('gananciaNeta');
+  const bBrutos = $('b-brutos');
+  const bGastos = $('b-gastos');
+  const bNeta   = $('b-neta');
+  const tripsList = $('tripsList');
+  const cmdInput  = $('cmdInput');
+  const btnSend   = $('btnSend');
+  const btnMic    = $('btnMic');
+  const toast     = $('toast');
+  const statusDot = $('statusDot');
+
+  // ── FECHA ────────────────────────────────────────────────
+  const hoy = new Date();
+  $('fecha').textContent = hoy.toLocaleDateString('es-MX', {weekday:'short', day:'numeric', month:'short'});
+
+  // ── TOAST ────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type = '') {
+    toast.textContent = msg;
+    toast.className = 'show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.className = ''; }, 3000);
+  }
+
+  // ── RENDERIZAR RESUMEN ───────────────────────────────────
+  function renderResumen(data) {
+    if (data.error) {
+      totalViajes.textContent = '0';
+      ingresosBrutos.textContent = '0.00';
+      totalGastos.textContent = '$0.00';
+      gananciaNeta.textContent = '$0.00';
+      bBrutos.textContent = '$0.00';
+      bGastos.textContent = '$0.00';
+      bNeta.textContent   = '$0.00';
+      tripsList.innerHTML = '<div class="empty-state">Registra tu primer viaje</div>';
+      return;
+    }
+
+    const neta = data.ganancia_neta;
+    totalViajes.textContent     = data.total_viajes;
+    ingresosBrutos.textContent  = data.ingresos_brutos.toFixed(2);
+    totalGastos.textContent     = '$' + data.total_gastos.toFixed(2);
+    gananciaNeta.textContent    = '$' + neta.toFixed(2);
+    gananciaNeta.style.color    = neta >= 0 ? 'var(--accent)' : 'var(--danger)';
+    bBrutos.textContent = '$' + data.ingresos_brutos.toFixed(2);
+    bGastos.textContent = '$' + data.total_gastos.toFixed(2);
+    bNeta.textContent   = '$' + neta.toFixed(2);
+    bNeta.style.color   = neta >= 0 ? 'var(--accent)' : 'var(--danger)';
+
+    // Viajes
+    if (!data.viajes_detalle || data.viajes_detalle.length === 0) {
+      tripsList.innerHTML = '<div class="empty-state">Sin viajes registrados aún</div>';
+      return;
+    }
+    tripsList.innerHTML = [...data.viajes_detalle].reverse().map(v => {
+      const total = parseFloat(v.monto) + parseFloat(v.propina || 0);
+      return `
+        <div class="trip-item">
+          <div>
+            <div class="plataforma">${v.plataforma}</div>
+            <div class="metodo">${v.metodo_pago}</div>
+          </div>
+          <div class="monto">${total.toFixed(2)}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── FETCH RESUMEN ────────────────────────────────────────
+  async function fetchResumen() {
+    try {
+      const res = await fetch(`${API}/resumen?conductor_id=${CONDUCTOR_ID}`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      renderResumen(data);
+      statusDot.style.background = 'var(--accent)';
+      statusDot.style.boxShadow  = '0 0 8px var(--accent)';
+    } catch (e) {
+      statusDot.style.background = 'var(--danger)';
+      statusDot.style.boxShadow  = '0 0 8px var(--danger)';
+    }
+  }
+
+  // ── ENVIAR COMANDO ───────────────────────────────────────
+  async function sendCommand(text) {
+    if (!text.trim()) return;
+    cmdInput.value = '';
+    cmdInput.disabled = true;
+    btnSend.disabled  = true;
+
+    try {
+      const res = await fetch(`${API}/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, conductor_id: CONDUCTOR_ID }),
+      });
+      const data = await res.json();
+      const ok = data.data !== null;
+      showToast(data.message, ok ? 'success' : '');
+      if (ok) await fetchResumen();
+    } catch (e) {
+      showToast('Sin conexión con el servidor', 'error');
+    } finally {
+      cmdInput.disabled = false;
+      btnSend.disabled  = false;
+      cmdInput.focus();
+    }
+  }
+
+  // ── VOICE (Web Speech API) ───────────────────────────────
+  let recognition = null;
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.lang = 'es-MX';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onresult = e => {
+      const transcript = e.results[0][0].transcript;
+      cmdInput.value = transcript;
+      sendCommand(transcript);
+    };
+    recognition.onend = () => {
+      btnMic.classList.remove('listening');
+      btnMic.textContent = '🎤';
+    };
+    recognition.onerror = () => {
+      btnMic.classList.remove('listening');
+      btnMic.textContent = '🎤';
+      showToast('No se pudo capturar audio', 'error');
+    };
+  } else {
+    btnMic.title = 'Tu navegador no soporta voz';
+    btnMic.style.opacity = '.4';
+    btnMic.disabled = true;
+  }
+
+  btnMic.addEventListener('click', () => {
+    if (!recognition) return;
+    if (btnMic.classList.contains('listening')) {
+      recognition.stop();
+    } else {
+      btnMic.classList.add('listening');
+      btnMic.textContent = '⏹';
+      recognition.start();
+    }
+  });
+
+  // ── EVENTOS ──────────────────────────────────────────────
+  btnSend.addEventListener('click', () => sendCommand(cmdInput.value));
+  cmdInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendCommand(cmdInput.value);
+  });
+
+  // ── INIT ─────────────────────────────────────────────────
+  fetchResumen();
+  setInterval(fetchResumen, 30000); // refresca cada 30s
+</script>
+</body>
+</html>

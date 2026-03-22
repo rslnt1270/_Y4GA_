@@ -1,0 +1,518 @@
+[
+    {
+        "uuid": "74ead05d-a884-4425-bab9-6f6f95dd9103",
+        "recognizedAt": 1720408963,
+        "activityTitle": "UberX",
+        "formattedTotal": "153,79 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/74ead05d-a884-4425-bab9-6f6f95dd9103",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "39 min 10 seg",
+            "formattedDistance": "23.37 km",
+            "pickupAddress": "Av. Constitución de Apatzingán, México D.F., Ciudad de México, MX",
+            "dropOffAddress": "Cam. Viejo a San Pedro Mártir, México D.F., 14630 Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.38751%24lng%3A-99.05592%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A1.0&marker=lat%3A19.27696%24lng%3A-99.16442%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A1.0&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3A%7BriuBnzq%7BQrFgJzKpBwJbb%40dG%60AtLz%40fTq%40xd%40gIpk%40uMxiBpWja%40xDhWxPjj%40p%40reB%7CmAdSdUzpAlbA%7EDxGdJ%7EXxFfJ%60Mhe%40zo%40jqBdT%7EjAd%40%60P%7D%40lO%7DJx%5DsBzDcL%60LmUbP%7BBSb%40oBjClAfd%40lw%40dEtErr%40b_%40vC%7EFbBb%40%7CDiAlAViF_VfAkCpCIf%40r%40m%40lBkOnFaHQ%5D%7DD%7E%40LaAC&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=UlJ2FzL4ALwiSBrbTMk-T5rxxOE="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "38b75fa1-9f93-4e5d-8998-3bea408aa898",
+        "recognizedAt": 1720408037,
+        "activityTitle": "Uber Priority",
+        "formattedTotal": "64,69 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/38b75fa1-9f93-4e5d-8998-3bea408aa898",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": {
+            "formattedTip": null,
+            "formattedSurge": "4,00 MXN"
+        },
+        "tripMetaData": {
+            "formattedDuration": "6 min 57 seg",
+            "formattedDistance": "2.96 km",
+            "pickupAddress": "San Rafael Atlixco - Eje 4 Sur, 09020 Ciudad de México, Ciudad de México, MX",
+            "dropOffAddress": "Av Gral Ignacio Zaragoza, Col Agrícola Oriental Iztacalco, 08500 Ciudad de México, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.38452%24lng%3A-99.07655%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&marker=lat%3A19.40247%24lng%3A-99.0668%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3Ag%60iuBl%7Bu%7BQhA_Dc_Co%5DtLmX&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=otDyjyZUNYZs_l91mHTomi2MZ-U="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "a9ebfb32-8cc7-4c45-92c0-3e2ead6ee876",
+        "recognizedAt": 1720401637,
+        "activityTitle": "UberX",
+        "formattedTotal": "193,44 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/a9ebfb32-8cc7-4c45-92c0-3e2ead6ee876",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "59 min 38 seg",
+            "formattedDistance": "30.76 km",
+            "pickupAddress": "Calle Tercera San Gabriel, 56250 San Miguel Coatlinchán, México, MX",
+            "dropOffAddress": "Ignacio Zaragoza, 15000 Venustiano Carranza, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.45164%24lng%3A-98.87989%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A1.0%24anchorY%3A0.5&marker=lat%3A19.41122%24lng%3A-99.09093%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A1.0%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3AwcvuBhnozQwFfoA%7D%40hl%40zlA%7C%5Chg%40tPfa%40nIbJjDrQdMjPhHfpBzxAzvFxjCpl%40pf%40vDfIzAz%5BeIvKkJdSqF%7EYxBvi%40kK%7EwBqTb%5De%40pCaNrQsAbFyeAl_BcvDz%7CHcB%60IpGnIMlNyZzn%40zD%7ECiDbHv%40r%40&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=jgPAneHKTdIjYUV_tJQZiwK33HU="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "673acff8-4884-4229-b4c6-6e9264dc744d",
+        "recognizedAt": 1720342817,
+        "activityTitle": "UberX",
+        "formattedTotal": "44,34 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/673acff8-4884-4229-b4c6-6e9264dc744d",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": {
+            "formattedTip": null,
+            "formattedSurge": "10,00 MXN"
+        },
+        "tripMetaData": {
+            "formattedDuration": "13 min 25 seg",
+            "formattedDistance": "6.10 km",
+            "pickupAddress": "Col Reforma, 06600 Cuauhtémoc, DF, MX",
+            "dropOffAddress": "C. Frambuesa, México D.F., 02820 Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.42572%24lng%3A-99.16946%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&marker=lat%3A19.46751%24lng%3A-99.16705%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3AuaquBb%60h%7CQmByFTeCg%40y%40yArCeDDqd%40vQ%7BZcPua%40oOgf%40%7DGab%40_BeSgDoCsAqEjf%40qd%40_CZuHkHWQjB%60BH&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=-SvxxPg5spg9gvxYxUyJt2rbOxo="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "8113b965-4545-4d90-a342-cdbd6e76446d",
+        "recognizedAt": 1720341194,
+        "activityTitle": "UberX",
+        "formattedTotal": "86,79 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/8113b965-4545-4d90-a342-cdbd6e76446d",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "12 min 52 seg",
+            "formattedDistance": "11.59 km",
+            "pickupAddress": "Jamaica, 15800 Venustiano Carranza, Ciudad de México, MX",
+            "dropOffAddress": "Col Polanco V Sección, 11560 Miguel Hidalgo, DF, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.40696%24lng%3A-99.12226%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A0.0&marker=lat%3A19.42604%24lng%3A-99.19436%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.0&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3AolmuBby%7E%7BQLyDdHsCpEfd%40bF%7CZiDbeBRl%7C%40tI%60c%40zIl%5CdLhn%40uF%7EQkAln%40%7E%40jMQtL_HbJaRcBoHZ_E%7CAkItIed%40oCyWbK%7BLXgIfFyDhMqHdDiBMyG%7DEpBiX&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=C8moDvg8iUML_yRnOIlGR3ZPmuQ="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "60f70880-896f-43ea-b042-a47a1fb200ff",
+        "recognizedAt": 1720340003,
+        "activityTitle": "UberX",
+        "formattedTotal": "59,83 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/60f70880-896f-43ea-b042-a47a1fb200ff",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "16 min 31 seg",
+            "formattedDistance": "10.34 km",
+            "pickupAddress": "Agrícola Oriental, 08500 Iztacalco, Ciudad de México, MX",
+            "dropOffAddress": "La Asunción, 08600 Iztacalco, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.4019%24lng%3A-99.07157%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A1.0%24anchorY%3A0.5&marker=lat%3A19.38931%24lng%3A-99.11786%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A1.0%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3AylluBf%7Ct%7BQiVoDoUoAgIeDfI%7CDhSfAd%40j%40uS%60e%40rHxEfBlHcNxlBpQ%60tAt%40jP%7C%40z%40lOEzk%40wAjUlAtPaGh%5CuE%7BExj%40xA%60%40p%40oHsRo%40c%40dEuBG&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=kTINc_QFJ49bOr6BlrYPKSYvKZ4="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "b4ba481a-a4a5-4cbf-b072-643962db3fa5",
+        "recognizedAt": 1720330620,
+        "activityTitle": "UberX",
+        "formattedTotal": "88,00 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/b4ba481a-a4a5-4cbf-b072-643962db3fa5",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "22 min 1 seg",
+            "formattedDistance": "10.34 km",
+            "pickupAddress": "Pza Garibaldi, Col Centro Cuauhtémoc, 06010 Ciudad de México, Ciudad de México, MX",
+            "dropOffAddress": "Av Parque de Chapultepec, México D.F., 11200 Estado de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.44062%24lng%3A-99.13986%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.0%24anchorY%3A0.5&marker=lat%3A19.45329%24lng%3A-99.21832%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.0%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3Ay%7EsuBbgb%7CQ%7DN%7B%40fMhBn%40vJa%40vE%60SpTzHvLrj%40vzAYhB%7EAl%40bHrRy%40hCqd%40zS%7E%40xN_GzKuPpd%40eDtEsCnLqB%60YkDxFcNlLkCrXcPhi%40iCjGeElDsAtC%7BH%60UqBbLwVh%5DtClCf%40tB&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=5_oYhzOVzVk3eH_3bXIjgC2p9ro="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "d8dd5b44-e9a5-460a-b95d-262bb44e507c",
+        "recognizedAt": 1720326051,
+        "activityTitle": "UberX",
+        "formattedTotal": "0,00 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/d8dd5b44-e9a5-460a-b95d-262bb44e507c",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "0 seg",
+            "formattedDistance": "0.00 km",
+            "pickupAddress": "martinez de alba, Moctezuma 1a. Sección, 15500 Ciudad de México, Ciudad de México, MX",
+            "dropOffAddress": "martinez de alba, Moctezuma 1a. Sección, 15500 Ciudad de México, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.430387%24lng%3A-99.10642%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.0%24anchorY%3A0.5&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=jAKvNY6JRa-K49YCKgdS1hml9a0="
+        },
+        "type": "TRIP",
+        "status": "CANCELED"
+    },
+    {
+        "uuid": "bb092cb6-1f51-4a1f-a374-0f184161bf98",
+        "recognizedAt": 1720324254,
+        "activityTitle": "UberX",
+        "formattedTotal": "96,45 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/bb092cb6-1f51-4a1f-a374-0f184161bf98",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "31 min 18 seg",
+            "formattedDistance": "11.13 km",
+            "pickupAddress": "Pensil San Juanico, 11440 Miguel Hidalgo, Ciudad de México, MX",
+            "dropOffAddress": "Moctezuma Primera Sección, 15500 Venustiano Carranza, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.45093%24lng%3A-99.18806%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A0.0&marker=lat%3A19.42983%24lng%3A-99.107%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.0&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3Ai_vuBhtk%7CQd%40qElCAfBuTdx%40qn%40%7CVcb%40hNgk%40xHwURuBkCyHbIiEmBuKfEsOx%5EzJb%40q%40fAge%40lR_aDjLww%40eAsAmg%40qCkAwAmCwO_JaE&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=9Wk7D-XLQw6_JMTqWxwvBzpER6M="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "b8d35b7c-35d6-4e6e-9891-bfb630fed816",
+        "recognizedAt": 1720320630,
+        "activityTitle": "UberX",
+        "formattedTotal": "167,84 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/b8d35b7c-35d6-4e6e-9891-bfb630fed816",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "43 min 21 seg",
+            "formattedDistance": "29.07 km",
+            "pickupAddress": "Col Santa Martha Acatitla, 09510 Iztapalapa, CMX, MX",
+            "dropOffAddress": "C. Lago Mayor, México D.F., 11320 Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.37365%24lng%3A-99.00476%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A1.0&marker=lat%3A19.44504%24lng%3A-99.18614%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A1.0&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3Ag%7CfuBvzg%7BQiE%7BAnCaGfh%40fRvCrAZ%7EAoDtI_lApiBgpDfsHyA%7EFh%40zCvE%7CDV%7CH_NbnBxUpgBh%40n%5E%7EGlo%40xDpTgDfcBMz%7D%40nEvWdOfl%40dLnm%40qFtPuAnl%40k%40fAqVhLwu%40lWsTdLcFn%40aNiFcGw%40%7Dp%40aEmNuBkf%40oB%7E%40wh%40hNySyL%7CO_Bt%40oJTyc%40gDsAlSlDb%40&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=uXWJt41n0fGgnZ0s4pS8dgux7a4="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "4b8e1a40-2893-41a4-9db6-901bcc6bbd70",
+        "recognizedAt": 1720319117,
+        "activityTitle": "UberX",
+        "formattedTotal": "13,09 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/4b8e1a40-2893-41a4-9db6-901bcc6bbd70",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "0 seg",
+            "formattedDistance": "0.00 km",
+            "pickupAddress": "Andador 21 de Marzo de 1806, Unidad Habitacional Ejército Constitucionalista, 09208 Iztapalapa, Ciudad de México, MX",
+            "dropOffAddress": "Andador 21 de Marzo de 1806, Unidad Habitacional Ejército Constitucionalista, 09208 Iztapalapa, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.386442%24lng%3A-99.04355%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A1.0%24anchorY%3A0.5&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=ryyLPcSLBWSOg5zXaRCCGCJokNQ="
+        },
+        "type": "TRIP",
+        "status": "DRIVER_CANCELED"
+    },
+    {
+        "uuid": "19de6048-1fed-4c48-b0ce-a926d8c1bf29",
+        "recognizedAt": 1720252836,
+        "activityTitle": "UberX",
+        "formattedTotal": "32,25 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/19de6048-1fed-4c48-b0ce-a926d8c1bf29",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "8 min 25 seg",
+            "formattedDistance": "3.80 km",
+            "pickupAddress": "01090 Álvaro Obregón, CMX, MX",
+            "dropOffAddress": "Jiumate, México D.F., 04369 Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.33871%24lng%3A-99.19193%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.0%24anchorY%3A0.5&marker=lat%3A19.33424%24lng%3A-99.17069%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.0%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3A%7Da%60uBpll%7CQP%7E%40fGhEnJWrBfAzAnD%60ADz%40iAeAuHDsG_EcB%7DFJ_%40g%40uDsh%40nIsZoAwF%7CA_t%40zBb%40MfBlD%7C%40&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=j8-yJMESgjjn3LGromRbwhU-pco="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "113b1087-4c92-43e7-aac0-6065f8939c29",
+        "recognizedAt": 1720245669,
+        "activityTitle": "UberX",
+        "formattedTotal": "0,00 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/113b1087-4c92-43e7-aac0-6065f8939c29",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "0 seg",
+            "formattedDistance": "0.00 km",
+            "pickupAddress": "Campestre Churubusco, 04200 Coyoacán, Ciudad de México, MX",
+            "dropOffAddress": "Campestre Churubusco, 04200 Coyoacán, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.341196%24lng%3A-99.13898%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.0&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=Day651-nOJIPflosOhObegcPNL4="
+        },
+        "type": "TRIP",
+        "status": "CANCELED"
+    },
+    {
+        "uuid": "3c383036-c2a2-41fc-b739-d50e620b22ed",
+        "recognizedAt": 1720243062,
+        "activityTitle": "UberX",
+        "formattedTotal": "81,78 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/3c383036-c2a2-41fc-b739-d50e620b22ed",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "16 min 49 seg",
+            "formattedDistance": "11.51 km",
+            "pickupAddress": "Piedad Narvarte, 03000 Benito Juárez, Ciudad de México, MX",
+            "dropOffAddress": "Calle Árbol del Fuego, México D.F., 04380 Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.40281%24lng%3A-99.15634%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A1.0%24anchorY%3A0.5&marker=lat%3A19.32678%24lng%3A-99.14483%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A1.0%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3AqrluBbne%7CQ%60FJGwEqLQKwi%40fBkbANmAnCuAxdFxa%40vk%40bGxq%40tKjI%5Dvj%40kI%7CaAeSnCtQaCxCjWvCzAcA&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=gWcijSZLI2oY95cMDOMwxabCp6w="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "aa019e7e-bd33-4938-be4f-f742b90106b0",
+        "recognizedAt": 1720243060,
+        "activityTitle": "UberX",
+        "formattedTotal": "60,92 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/aa019e7e-bd33-4938-be4f-f742b90106b0",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": {
+            "formattedTip": "20,00 MXN",
+            "formattedSurge": null
+        },
+        "tripMetaData": {
+            "formattedDuration": "10 min 44 seg",
+            "formattedDistance": "4.31 km",
+            "pickupAddress": "Col Xoco, 03330 Benito Juárez, DF, MX",
+            "dropOffAddress": "Del Valle Norte, 03103 Benito Juárez, Mexico City, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.35877%24lng%3A-99.16765%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.0%24anchorY%3A0.5&marker=lat%3A19.39237%24lng%3A-99.16493%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.0%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3Ai_duBxtg%7CQWtLkAnBgGtCuOyFkqD%7Bj%40oBxK&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=-lR9MtPCtm5pzyw3F-jUi3Mztyg="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "b56ed693-6da3-413f-8269-5a5234df5d1d",
+        "recognizedAt": 1720240489,
+        "activityTitle": "UberX",
+        "formattedTotal": "106,29 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/b56ed693-6da3-413f-8269-5a5234df5d1d",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "32 min 48 seg",
+            "formattedDistance": "17.16 km",
+            "pickupAddress": "Santa María La Ribera, 06400 Cuauhtémoc, Ciudad de México, MX",
+            "dropOffAddress": "Calz. de Tlalpan, México D.F., 04220 Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.45436%24lng%3A-99.15411%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&marker=lat%3A19.35145%24lng%3A-99.14535%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3AwtvuBd%60e%7CQ%5CyErn%40tGxFkj%40ty%40xKnBsDbFgi%40dz%40pHzDit%40jAqGrbJfu%40xj%40lGzt%40nL%60M_%40pg%40qHXbB%7BAS_%40iD%7CCkE%7C%40iFxJd%40_%40%7CGiFrAmr%40hKwLA&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=xEyUKtHZ0dGNgrwQczs8kh_XD3k="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "5f3b6cb2-507c-4cbb-b095-f21a880254cd",
+        "recognizedAt": 1720238204,
+        "activityTitle": "Uber Priority",
+        "formattedTotal": "101,29 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/5f3b6cb2-507c-4cbb-b095-f21a880254cd",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "30 min 28 seg",
+            "formattedDistance": "13.01 km",
+            "pickupAddress": "Felipe Ángeles y Canario, Col Bellavista Álvaro Obregón, 01140 Ciudad de México, CMX, MX",
+            "dropOffAddress": "San Simón Tolnáhuac, 06920 Cuauhtémoc, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.39456%24lng%3A-99.19337%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&marker=lat%3A19.45636%24lng%3A-99.14463%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3A__kuBpul%7CQ%7CCx%40ZjFoR%7EKwD%7BBoAh%40_FkIqB%7BMb%40oUgA%7BR%7C%40ua%40md%40iLw_%40jQgJfA_f%40sTy%5Bw%40k_Bs%7B%40g%5CyLaZiEUsD%7CI%7B%60Aun%40sHeJwEwL%7DQiDcCnBal%40tQfCaFrY&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=Ccc__1MxgSeQ8NYy-tRGVXCHbjA="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "a7d7cc99-c35f-493d-9045-7e92ff0d90ae",
+        "recognizedAt": 1720175632,
+        "activityTitle": "UberX",
+        "formattedTotal": "35,86 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/a7d7cc99-c35f-493d-9045-7e92ff0d90ae",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "3 min 54 seg",
+            "formattedDistance": "2.95 km",
+            "pickupAddress": "56208 Texcoco, México, MX",
+            "dropOffAddress": "Camino Viejo a Chapingo, 56150 Salitrería, México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.51889%24lng%3A-98.8949%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&marker=lat%3A19.49646%24lng%3A-98.89215%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.5&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3A_hcvBblrzQz%60AaF%7EHr%40tK%60FlQWf%5ElElBiWq%40E&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=hnhPgNKMKIwNBJE_OAidN37yRLY="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "ba54743a-a596-45f4-9c07-981b9f7eeb98",
+        "recognizedAt": 1720168802,
+        "activityTitle": "Uber Priority",
+        "formattedTotal": "0,00 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/ba54743a-a596-45f4-9c07-981b9f7eeb98",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "0 seg",
+            "formattedDistance": "0.00 km",
+            "pickupAddress": "Av Insurgentes, Col Juarez, 06600 Cuauhtémoc, Ciudad de México, MX",
+            "dropOffAddress": "Av Insurgentes, Col Juarez, 06600 Cuauhtémoc, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.427042%24lng%3A-99.16071%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.0%24anchorY%3A0.5&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=Dsk7Aw9GqLZT2QYm5tVqPjUHptY="
+        },
+        "type": "TRIP",
+        "status": "UNFULFILLED"
+    },
+    {
+        "uuid": "e4f4dbd4-cd7c-4468-a5d4-bc8218fdb0f4",
+        "recognizedAt": 1720160526,
+        "activityTitle": "UberX",
+        "formattedTotal": "86,60 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/e4f4dbd4-cd7c-4468-a5d4-bc8218fdb0f4",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": {
+            "formattedTip": null,
+            "formattedSurge": "4,00 MXN"
+        },
+        "tripMetaData": {
+            "formattedDuration": "16 min 45 seg",
+            "formattedDistance": "14.26 km",
+            "pickupAddress": "Eqpto Bosque de Chapultepec I Sección, 11580 Miguel Hidalgo, Ciudad de México, MX",
+            "dropOffAddress": "Valentín Gómez Farías, 15010 Venustiano Carranza, Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.42591%24lng%3A-99.19343%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A0.0&marker=lat%3A19.41795%24lng%3A-99.09528%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.0&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3A%7BbquB%7Cul%7CQ%5CwEp%40Wr_%40zB%7CLfFrGNtViMd%5DmKtg%40wS%60H%5Bp%40yAvAip%40pFePaLkn%40oMwf%40kGk%5CF%7D%7D%40pDu%60BiEiXqGum%40m%40o%5E_R_%7BA_%40%7BKmByAaa%40bEwG%40%7DR%7DItCkGnCn%40&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=kKkhgO_M_yfcn5_uDhdl9Umea5g="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "1b1ad223-1fac-4a87-ad4e-417e83fe4c93",
+        "recognizedAt": 1720159825,
+        "activityTitle": "UberX",
+        "formattedTotal": "55,23 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/trips/1b1ad223-1fac-4a87-ad4e-417e83fe4c93",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": {
+            "formattedDuration": "13 min 0 seg",
+            "formattedDistance": "5.68 km",
+            "pickupAddress": "Paseo De La Reforma, 06300 Cuauhtémoc, Ciudad de México, MX",
+            "dropOffAddress": "Lago Bangueolo, México D.F., 11520 Ciudad de México, MX",
+            "mapUrl": "https://static-maps.uber.com/map?width=360&height=100&marker=lat%3A19.43697%24lng%3A-99.14765%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-pickup-pin.png%24anchorX%3A0.5%24anchorY%3A0.0&marker=lat%3A19.43855%24lng%3A-99.19209%24icon%3Ahttps%3A%2F%2Fd1a3f4spazzrp4.cloudfront.net%2Fmaps%2Fhelix%2Fcar-dropoff-pin.png%24anchorX%3A0.5%24anchorY%3A0.0&polyline=color%3A0xFF2DBAE4%24width%3A4%24enc%3AahsuBxwc%7CQpElGvGdOvFlS%7CXzr%40OvB%7CBlBlGxQeAdCcd%40rS%7C%40%7ENa%5Erx%40sCnL_BvVwFdJUhFvLP&source=769a605b_1c9b_3da4_a486_ccc264a18174&signature=2WYvTPqp2mj1wApZZDWgxtrle60="
+        },
+        "type": "TRIP",
+        "status": "COMPLETED"
+    },
+    {
+        "uuid": "27e22e6c-e82e-5f46-a643-33a35fe75923",
+        "recognizedAt": 1721001600,
+        "activityTitle": "Ajuste de Retenciones de Impuestos",
+        "formattedTotal": "-1,47 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/activities/detail?eventType=MISC&activityFeedUUID=27e22e6c-e82e-5f46-a643-33a35fe75923",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": null,
+        "type": "MISC",
+        "status": null
+    },
+    {
+        "uuid": "4a7a981e-d171-5655-bffd-b8bb0271c531",
+        "recognizedAt": 1721001600,
+        "activityTitle": "Ajuste de Retenciones de Impuestos",
+        "formattedTotal": "-6,35 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/activities/detail?eventType=MISC&activityFeedUUID=4a7a981e-d171-5655-bffd-b8bb0271c531",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": null,
+        "type": "MISC",
+        "status": null
+    },
+    {
+        "uuid": "20ec939e-2a43-5e1b-be2e-7b2093535abe",
+        "recognizedAt": 1720915200,
+        "activityTitle": "Ajuste",
+        "formattedTotal": "-100,00 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/activities/detail?eventType=MISC&activityFeedUUID=20ec939e-2a43-5e1b-be2e-7b2093535abe",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": null,
+        "type": "MISC",
+        "status": null
+    },
+    {
+        "uuid": "f9247508-10c6-5a68-acdc-408d7c3a8a20",
+        "recognizedAt": 1721520000,
+        "activityTitle": "Ajuste",
+        "formattedTotal": "-100,00 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/activities/detail?eventType=MISC&activityFeedUUID=f9247508-10c6-5a68-acdc-408d7c3a8a20",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": null,
+        "type": "MISC",
+        "status": null
+    },
+    {
+        "uuid": "32d25c4c-0a3c-55b5-b07a-41141d043df4",
+        "recognizedAt": 1722124800,
+        "activityTitle": "Ajuste",
+        "formattedTotal": "-100,00 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/activities/detail?eventType=MISC&activityFeedUUID=32d25c4c-0a3c-55b5-b07a-41141d043df4",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": null,
+        "type": "MISC",
+        "status": null
+    },
+    {
+        "uuid": "3624ff49-67a2-5148-a30b-67e30b39c7d3",
+        "recognizedAt": 1724284800,
+        "activityTitle": "Ajuste de Retenciones de Impuestos",
+        "formattedTotal": "-1,57 MXN",
+        "routing": {
+            "webviewUrl": "https://drivers.uber.com/earnings/activities/detail?eventType=MISC&activityFeedUUID=3624ff49-67a2-5148-a30b-67e30b39c7d3",
+            "deeplinkUrl": null
+        },
+        "breakdownDetails": null,
+        "tripMetaData": null,
+        "type": "MISC",
+        "status": null
+    }
+]

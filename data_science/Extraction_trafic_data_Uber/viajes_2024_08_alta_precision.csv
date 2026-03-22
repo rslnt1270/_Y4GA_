@@ -1,0 +1,2 @@
+trip_id,fecha_local,anio,mes,semana_iso,dia_semana,hora,monto_bruto,duracion_min,distancia_km,mxn_por_minuto,origen,destino,estado,enlace_google_maps
+3624ff49-67a2-5148-a30b-67e30b39c7d3,2024-08-21 14:00:00,2024,08,34,Wednesday,14,1.57,0.0,0.0,0,Ubicación no disponible,Ubicación no disponible,,

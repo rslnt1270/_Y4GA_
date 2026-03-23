@@ -647,6 +647,30 @@
     }
     @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
+    /* ── SELECT SCREEN ── */
+    #selectScreen {
+      position: fixed; inset: 0; z-index: 1100;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 20px;
+    }
+    #selectScreen.hidden { display: none; }
+    .sel-brand { font-size: 2rem; font-weight: 900; letter-spacing: 8px; color: var(--accent); margin-bottom: 6px; }
+    .sel-tag { font-size: .7rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 48px; }
+    .sel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 480px; }
+    .sel-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+      padding: 24px 18px; cursor: pointer; text-align: left;
+      transition: border-color .2s, transform .15s;
+    }
+    .sel-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .sel-card:active { transform: translateY(0); opacity: .85; }
+    .sel-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .sel-name { font-size: 1rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--text); margin-bottom: 6px; }
+    .sel-desc { font-size: .72rem; color: var(--muted); line-height: 1.5; }
+    .sel-arrow { font-size: .72rem; color: var(--accent); font-weight: 700; margin-top: 14px; }
+
     /* ── AUTH SCREEN ── */
     #authScreen {
       position: fixed; inset: 0; z-index: 1000;
@@ -654,7 +678,6 @@
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       padding: 32px 24px;
-      /* necesario para posicionar el boton de regreso */
     }
     #authScreen.hidden { display: none; }
     .auth-logo {
@@ -725,7 +748,8 @@
     .auth-back {
       position: absolute; top: 20px; left: 20px;
       font-size: .75rem; color: var(--muted);
-      text-decoration: none; letter-spacing: .5px;
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font); letter-spacing: .5px;
       padding: 6px 10px; border-radius: 8px;
       transition: color .15s, background .15s;
     }
@@ -1163,9 +1187,29 @@
 </head>
 <body>
 
+  <!-- SELECT SCREEN -->
+  <div id="selectScreen" class="hidden">
+    <div class="sel-brand">Y4GA</div>
+    <div class="sel-tag">Selecciona una app</div>
+    <div class="sel-grid">
+      <div class="sel-card" onclick="elegirYaga()">
+        <div class="sel-icon">🚕</div>
+        <div class="sel-name">YAGA</div>
+        <div class="sel-desc">Co-piloto financiero para conductores</div>
+        <div class="sel-arrow">Entrar →</div>
+      </div>
+      <div class="sel-card" onclick="window.location.href='/poleana/'">
+        <div class="sel-icon">🎲</div>
+        <div class="sel-name">POLEANA</div>
+        <div class="sel-desc">Juego de mesa digital multijugador</div>
+        <div class="sel-arrow">Entrar →</div>
+      </div>
+    </div>
+  </div>
+
   <!-- AUTH SCREEN -->
   <div id="authScreen">
-    <a href="/select/" class="auth-back" title="Volver al inicio">← Apps</a>
+    <button onclick="volverSelect()" class="auth-back" title="Volver al inicio">← Apps</button>
     <div class="auth-logo">YAGA</div>
     <div class="auth-tagline">Co-piloto financiero para conductores</div>
     <div class="auth-card">
@@ -1642,6 +1686,20 @@
 <script>
   // ── CONFIG ──────────────────────────────────────────────
   const API = '/api/v1';
+  // ── Seleccion de app ──────────────────────────────────────
+  function mostrarSelect() {
+    document.getElementById('selectScreen').classList.remove('hidden');
+    document.getElementById('authScreen').classList.add('hidden');
+  }
+  function elegirYaga() {
+    document.getElementById('selectScreen').classList.add('hidden');
+    document.getElementById('authScreen').classList.remove('hidden');
+  }
+  function volverSelect() {
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('selectScreen').classList.remove('hidden');
+  }
+
   // ── Helpers de sesión (localStorage = recordar / sessionStorage = solo esta sesión) ──
   function getToken() {
     return localStorage.getItem('yaga_token') || sessionStorage.getItem('yaga_token');
@@ -2304,7 +2362,7 @@
     const token = getToken();
     const conductorId = getYaga('yaga_conductor_id');
     if (!token || !conductorId) {
-      $('authScreen').classList.remove('hidden');
+      mostrarSelect();
       return;
     }
     try {
@@ -2408,7 +2466,7 @@
 
   // Check inicial síncrono — validarSesion() confirmará o revertirá después
   if (!getToken() || !getYaga("yaga_conductor_id")) {
-    document.getElementById("authScreen").classList.remove("hidden");
+    mostrarSelect();
   }
 
   // ── IMPORT PANEL ─────────────────────────────────────────

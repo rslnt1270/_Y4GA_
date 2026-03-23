@@ -1166,11 +1166,13 @@
       <div class="auth-form active" id="formLogin">
         <div class="auth-field">
           <label>Email</label>
-          <input id="loginEmail" type="email" placeholder="tu@email.com" autocomplete="email" />
+          <input id="loginEmail" type="email" placeholder="tu@email.com" autocomplete="email"
+                 onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()" />
         </div>
         <div class="auth-field">
           <label>Contraseña</label>
-          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" />
+          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"
+                 onkeydown="if(event.key==='Enter') doLogin()" />
         </div>
         <label class="auth-remember">
           <input type="checkbox" id="loginRemember" checked />

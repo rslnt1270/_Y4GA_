@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.v1.nlp import router as nlp_router
 from api.v1.vehiculo import router as vehiculo_router
 from api.v1.auth import router as auth_router
+from api.v1.historico import router as historico_router
 from services.database import get_pool, close_pool
 
 
@@ -36,6 +37,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/v1", tags=["Auth"])
 app.include_router(vehiculo_router, prefix="/api/v1", tags=["Vehículo"])
 app.include_router(nlp_router, prefix="/api/v1", tags=["Comandos"])
+app.include_router(historico_router, prefix="/api/v1", tags=["Historico"])
 
 
 @app.get("/health", tags=["Health"])

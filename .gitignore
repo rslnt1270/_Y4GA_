@@ -20,7 +20,21 @@ gs_session.json
 Local State
 Last Version
 
+# Claves SSH
+*.pem
+
 # Datos sensibles
 *.xlsx
 YAGA_DataSet_*.csv
 YAGA_Viajes_*.csv
+YAGA_Libro_Mayor_*.csv
+
+# Archivos temporales de LibreOffice
+.~lock.*#
+
+# Historial de R
+.Rhistory
+
+# Archivos generados (no fuente)
+data_science/geocode_cache.json
+data_science/YAGA_Mapa_Historico.html

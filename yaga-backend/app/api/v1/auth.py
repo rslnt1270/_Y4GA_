@@ -1,11 +1,12 @@
 """
 YAGA PROJECT - Endpoints de Autenticación
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional
+from jose import JWTError
 from services.database import get_pool
-from services.auth_service import hash_password, verify_password, create_token
+from services.auth_service import hash_password, verify_password, create_token, decode_token
 
 router = APIRouter()
 
@@ -20,6 +21,32 @@ class RegistroBody(BaseModel):
 class LoginBody(BaseModel):
     email: str
     password: str
+
+
+@router.get("/auth/me")
+async def me(authorization: Optional[str] = Header(None), pool=Depends(get_pool)):
+    """Valida el JWT y retorna datos del conductor autenticado."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token requerido")
+    try:
+        payload = decode_token(authorization[7:])
+        conductor_id = payload["sub"]
+    except (JWTError, KeyError):
+        raise HTTPException(status_code=401, detail="Token invalido o expirado")
+
+    async with pool.acquire() as conn:
+        conductor = await conn.fetchrow(
+            "SELECT id, nombre, email, activo FROM conductores WHERE id = $1",
+            conductor_id
+        )
+    if not conductor or not conductor["activo"]:
+        raise HTTPException(status_code=401, detail="Cuenta no encontrada o desactivada")
+
+    return {
+        "conductor_id": str(conductor["id"]),
+        "nombre": conductor["nombre"],
+        "email": conductor["email"],
+    }
 
 
 @router.post("/auth/register", status_code=201)

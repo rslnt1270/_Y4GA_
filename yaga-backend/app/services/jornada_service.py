@@ -3,6 +3,7 @@ YAGA PROJECT - Servicio de Jornadas
 Copyright (c) 2026 YAGA Project
 """
 from services.database import get_pool
+from services.historico_service import get_promedio_historico
 from datetime import date
 
 
@@ -76,6 +77,16 @@ async def get_resumen_jornada(conductor_id: str = "default") -> dict:
         }
 
 
+async def cerrar_jornada(conductor_id: str = "default") -> bool:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        jornada_id = await conn.fetchval(
+            "UPDATE jornadas SET estado = 'cerrada', fin = NOW() WHERE conductor_id = $1 AND fecha = $2 AND estado = 'activa' RETURNING id",
+            conductor_id, date.today()
+        )
+        return jornada_id is not None
+
+
 async def get_comparativa(conductor_id: str = "default") -> dict:
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -90,7 +101,7 @@ async def get_comparativa(conductor_id: str = "default") -> dict:
         total_hoy = sum(float(v["monto"]) + float(v["propina"] or 0) for v in viajes)
         n_viajes = len(viajes)
         promedio_hoy = round(total_hoy / n_viajes, 2) if n_viajes > 0 else 0
-        promedio_historico = 72.94
+        promedio_historico = await get_promedio_historico(conductor_id)
         delta_pct = round((promedio_hoy - promedio_historico) / promedio_historico * 100, 1) if promedio_historico else 0
 
         if delta_pct >= 10:

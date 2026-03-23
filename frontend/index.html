@@ -719,6 +719,14 @@
       text-align: center; display: none;
     }
     .auth-error.show { display: block; }
+    .auth-remember {
+      display: flex; align-items: center; gap: 8px;
+      font-size: .82rem; color: var(--muted); cursor: pointer;
+    }
+    .auth-remember input[type="checkbox"] {
+      width: 16px; height: 16px; accent-color: var(--accent);
+      cursor: pointer; flex-shrink: 0;
+    }
 
     /* ── HELP PANEL ── */
     .btn-help {
@@ -1164,6 +1172,10 @@
           <label>Contraseña</label>
           <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" />
         </div>
+        <label class="auth-remember">
+          <input type="checkbox" id="loginRemember" checked />
+          Recordar mis datos (inicio rápido)
+        </label>
         <div class="auth-error" id="loginError"></div>
         <button class="btn-auth" id="btnLogin" onclick="doLogin()">Entrar</button>
       </div>
@@ -1613,7 +1625,28 @@
 <script>
   // ── CONFIG ──────────────────────────────────────────────
   const API = '/api/v1';
-  let CONDUCTOR_ID = localStorage.getItem('yaga_conductor_id') || 'default';
+  // ── Helpers de sesión (localStorage = recordar / sessionStorage = solo esta sesión) ──
+  function getToken() {
+    return localStorage.getItem('yaga_token') || sessionStorage.getItem('yaga_token');
+  }
+  function getYaga(key) {
+    return localStorage.getItem(key) || sessionStorage.getItem(key);
+  }
+  function saveSession(token, conductorId, nombre, email, remember) {
+    var store = remember ? localStorage : sessionStorage;
+    store.setItem('yaga_token', token);
+    store.setItem('yaga_conductor_id', conductorId);
+    store.setItem('yaga_nombre', nombre);
+    store.setItem('yaga_email', email);
+  }
+  function clearSession() {
+    ['yaga_token','yaga_conductor_id','yaga_nombre','yaga_email'].forEach(function(k) {
+      localStorage.removeItem(k);
+      sessionStorage.removeItem(k);
+    });
+  }
+
+  let CONDUCTOR_ID = getYaga('yaga_conductor_id') || 'default';
 
   // ── DOM ─────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -1968,8 +2001,8 @@
 
   // ── USER MENU ────────────────────────────────────────────
   function initUserMenu() {
-    const nombre = localStorage.getItem('yaga_nombre') || '?';
-    const email  = localStorage.getItem('yaga_email')  || '';
+    const nombre = getYaga('yaga_nombre') || '?';
+    const email  = getYaga('yaga_email')  || '';
     const inicial = nombre.trim().charAt(0).toUpperCase();
     $('userBtn').textContent  = inicial;
     $('udNombre').textContent = nombre;
@@ -2006,10 +2039,7 @@
   }
 
   function cerrarSesion() {
-    localStorage.removeItem('yaga_token');
-    localStorage.removeItem('yaga_conductor_id');
-    localStorage.removeItem('yaga_nombre');
-    localStorage.removeItem('yaga_email');
+    clearSession();
     $('userDropdown').classList.remove('open');
     $('authScreen').classList.remove('hidden');
     // Limpiar estado del mapa para que recargue en el próximo login
@@ -2046,7 +2076,7 @@
     if (mapaLoaded) return;
     mapaLoaded = true;
 
-    const token = localStorage.getItem('yaga_token');
+    const token = getToken();
     if (!token) {
       $('mapaCargando').style.display = 'none';
       $('mapaEmpty').style.display    = 'flex';
@@ -2254,8 +2284,8 @@
 
   // ── VALIDACION DE TOKEN AL ARRANQUE ──────────────────────
   async function validarSesion() {
-    const token = localStorage.getItem('yaga_token');
-    const conductorId = localStorage.getItem('yaga_conductor_id');
+    const token = getToken();
+    const conductorId = getYaga('yaga_conductor_id');
     if (!token || !conductorId) {
       $('authScreen').classList.remove('hidden');
       return;
@@ -2266,17 +2296,15 @@
       });
       if (!res.ok) {
         // Token expirado o invalido — limpiar sesion
-        localStorage.removeItem('yaga_token');
-        localStorage.removeItem('yaga_conductor_id');
-        localStorage.removeItem('yaga_nombre');
-        localStorage.removeItem('yaga_email');
+        clearSession();
         $('authScreen').classList.remove('hidden');
         return;
       }
       const data = await res.json();
-      // Actualizar datos frescos del conductor
-      localStorage.setItem('yaga_nombre', data.nombre);
-      localStorage.setItem('yaga_email', data.email);
+      // Actualizar datos frescos (preservar en el storage que ya estaba en uso)
+      var store = localStorage.getItem('yaga_token') ? localStorage : sessionStorage;
+      store.setItem('yaga_nombre', data.nombre);
+      store.setItem('yaga_email', data.email);
       CONDUCTOR_ID = data.conductor_id;
       $('authScreen').classList.add('hidden');
       initUserMenu();
@@ -2312,8 +2340,9 @@
   }
 
   async function doLogin() {
-    var email = document.getElementById("loginEmail").value.trim();
-    var pass  = document.getElementById("loginPass").value;
+    var email    = document.getElementById("loginEmail").value.trim();
+    var pass     = document.getElementById("loginPass").value;
+    var remember = document.getElementById("loginRemember").checked;
     if (!email || !pass) { setAuthError("loginError", "Completa todos los campos"); return; }
     var btn = document.getElementById("btnLogin");
     btn.disabled = true; btn.textContent = "Entrando…";
@@ -2325,10 +2354,7 @@
       });
       var data = await res.json();
       if (!res.ok) { setAuthError("loginError", data.detail || "Credenciales incorrectas"); return; }
-      localStorage.setItem("yaga_token", data.token);
-      localStorage.setItem("yaga_conductor_id", data.conductor_id);
-      localStorage.setItem("yaga_nombre", data.nombre);
-      localStorage.setItem("yaga_email", email);
+      saveSession(data.token, data.conductor_id, data.nombre, email, remember);
       CONDUCTOR_ID = data.conductor_id;
       document.getElementById("authScreen").classList.add("hidden");
       initUserMenu();
@@ -2354,10 +2380,7 @@
       });
       var data = await res.json();
       if (!res.ok) { setAuthError("regError", data.detail || "Error al registrar"); return; }
-      localStorage.setItem("yaga_token", data.token);
-      localStorage.setItem("yaga_conductor_id", data.conductor_id);
-      localStorage.setItem("yaga_nombre", data.nombre);
-      localStorage.setItem("yaga_email", email);
+      saveSession(data.token, data.conductor_id, data.nombre, email, true); // registro siempre recuerda
       CONDUCTOR_ID = data.conductor_id;
       document.getElementById("authScreen").classList.add("hidden");
       initUserMenu();
@@ -2366,10 +2389,8 @@
     finally { btn.disabled = false; btn.textContent = "Crear cuenta"; }
   }
 
-  // Mostrar/ocultar auth screen al cargar
-  if (localStorage.getItem("yaga_token") && localStorage.getItem("yaga_conductor_id")) {
-    document.getElementById("authScreen").classList.add("hidden");
-  } else {
+  // Check inicial síncrono — validarSesion() confirmará o revertirá después
+  if (!getToken() || !getYaga("yaga_conductor_id")) {
     document.getElementById("authScreen").classList.remove("hidden");
   }
 
@@ -2419,7 +2440,7 @@
   async function subirJson(plat) {
     const file = importFiles[plat];
     if (!file) return;
-    const token = localStorage.getItem('yaga_token');
+    const token = getToken();
     if (!token) { showToast('Sesion expirada', 'error'); return; }
 
     const btn = document.getElementById('btn-upload-' + plat);

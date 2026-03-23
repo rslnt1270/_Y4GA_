@@ -30,55 +30,40 @@ class ClassificationResult:
     matched_keywords: list[str]
     entities: ExtractedEntities = field(default_factory=ExtractedEntities)
 
-
 def extract_entities(text: str) -> ExtractedEntities:
     entities = ExtractedEntities()
     normalized = normalize(text)
 
-    # Extraer monto principal
-    amounts = re.findall(r'\b(\d+(?:\.\d{2})?)\b', text)
-    if amounts:
-        entities.monto = float(amounts[0])
-    if len(amounts) >= 2:
-        entities.propina = float(amounts[1])
+    # 1. Extraer todos los números del texto
+    amounts = [float(n) for n in re.findall(r'\d+(?:\.\d+)?', text)]
 
-    # Detectar plataforma
-    platforms = {
-        'uber': 'uber', 'didi': 'didi', 'cabify': 'cabify',
-        'indriver': 'indriver', 'rappi': 'rappi', 'ubereats': 'ubereats',
-    }
-    for kw, platform in platforms.items():
-        if kw in normalized:
-            entities.plataforma = platform
-            break
-    if not entities.plataforma:
-        entities.plataforma = 'uber'  # Default
+    # 2. Lógica Especial de Propinas
+    if "propina" in normalized and amounts:
+        # Si hay propina, el primer número es el monto del viaje, el segundo la propina
+        # Ej: "viaje 100 propina 20" -> monto 100, propina 20
+        # Ej: "20 propina" -> monto 20, propina 0 (el total ya incluye la propina)
+        if len(amounts) >= 2:
+            entities.monto = amounts[0]
+            entities.propina = amounts[1]
+        else:
+            # Solo propina sin monto de viaje (ej: "20 propina") -> monto=tip, propina=0
+            entities.monto = amounts[0]
+            entities.propina = 0
+    elif amounts:
+        # Viaje normal
+        entities.monto = amounts[0]
 
-    # Detectar método de pago
-    if any(kw in normalized for kw in ['efectivo', 'cash', 'billetes']):
+    # 3. Plataforma (Uber por defecto)
+    platforms = {'uber': 'uber', 'didi': 'didi', 'cabify': 'cabify', 'indriver': 'indriver'}
+    entities.plataforma = next((p for k, p in platforms.items() if k in normalized), 'uber')
+
+    # 4. Método de pago
+    if any(kw in normalized for kw in ['efectivo', 'cash']):
         entities.metodo_pago = 'efectivo'
-    elif any(kw in normalized for kw in ['tarjeta', 'card', 'credito', 'debito']):
-        entities.metodo_pago = 'tarjeta'
     else:
         entities.metodo_pago = 'app'
 
-    # Detectar categoría de gasto
-    gasto_map = {
-        'gasolina': ['gasolina', 'gas', 'cargue', 'cargué', 'llene', 'llené'],
-        'comida':   ['comida', 'comi', 'comí', 'comer', 'taco', 'almuerzo'],
-        'mantenimiento': ['mantenimiento', 'taller', 'aceite', 'llanta', 'frenos'],
-        'lavado':   ['lavado', 'lavar', 'lavé'],
-        'estacionamiento': ['estacionamiento', 'parqueo', 'parking'],
-    }
-    for categoria, keywords in gasto_map.items():
-        if any(kw in normalized for kw in keywords):
-            entities.categoria_gasto = categoria
-            break
-    if not entities.categoria_gasto:
-        entities.categoria_gasto = 'otro'
-
     return entities
-
 
 def classify(text: str) -> ClassificationResult:
     normalized = normalize(text)

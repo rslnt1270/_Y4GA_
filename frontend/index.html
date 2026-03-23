@@ -268,6 +268,112 @@
       padding: 20px;
       border-bottom: 1px solid var(--border);
     }
+
+    /* ── PERFIL VEHÍCULO ── */
+    .perfil-card {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+    .perfil-identity {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .perfil-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .perfil-nombre {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .perfil-sub {
+      font-size: .75rem;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+    }
+    .perfil-sub span::before { content: '·'; margin-right: 8px; }
+    .perfil-sub span:first-child::before { content: ''; margin-right: 0; }
+    .btn-edit-perfil {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: .72rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      transition: border-color .2s, color .2s;
+      flex-shrink: 0;
+    }
+    .btn-edit-perfil:hover { border-color: var(--accent); color: var(--accent); }
+
+    .perfil-form {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .perfil-form.open { display: flex; }
+    .perfil-form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .perfil-field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .perfil-field label {
+      font-size: .58rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+    .perfil-field input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: .85rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .perfil-field input:focus { border-color: var(--accent); }
+    .perfil-field input::placeholder { color: var(--muted); }
+    .btn-guardar-perfil {
+      background: var(--accent);
+      color: #0f1923;
+      border: none;
+      border-radius: 10px;
+      padding: 11px;
+      font-family: var(--font);
+      font-size: .85rem;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: .5px;
+      transition: opacity .15s;
+    }
+    .btn-guardar-perfil:active { opacity: .75; }
+    .perfil-sin-datos {
+      font-size: .8rem;
+      color: var(--warn);
+      font-weight: 600;
+    }
     .saludo-avatar {
       font-size: .85rem;
       color: var(--text);
@@ -371,9 +477,182 @@
       width: 80%;
     }
     @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── AUTH SCREEN ── */
+    #authScreen {
+      position: fixed; inset: 0; z-index: 1000;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 24px;
+    }
+    #authScreen.hidden { display: none; }
+    .auth-logo {
+      font-size: 2.5rem; font-weight: 900;
+      letter-spacing: 6px; color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .auth-tagline {
+      font-size: .75rem; color: var(--muted);
+      letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+    .auth-card {
+      width: 100%; max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .auth-tabs {
+      display: flex; gap: 0;
+      background: var(--bg);
+      border-radius: 10px; padding: 4px;
+      margin-bottom: 22px;
+    }
+    .auth-tab {
+      flex: 1; padding: 8px;
+      text-align: center;
+      font-size: .75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--muted); border-radius: 8px;
+      cursor: pointer; transition: all .2s;
+    }
+    .auth-tab.active { background: var(--accent); color: #0f1923; }
+    .auth-form { display: none; flex-direction: column; gap: 12px; }
+    .auth-form.active { display: flex; }
+    .auth-field {
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .auth-field label {
+      font-size: .6rem; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted);
+    }
+    .auth-field input {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 14px;
+      color: var(--text); font-family: var(--font);
+      font-size: .9rem; outline: none;
+      transition: border-color .2s;
+    }
+    .auth-field input:focus { border-color: var(--accent); }
+    .auth-field input::placeholder { color: var(--muted); }
+    .btn-auth {
+      background: var(--accent); color: #0f1923;
+      border: none; border-radius: 10px;
+      padding: 13px; font-family: var(--font);
+      font-size: .9rem; font-weight: 800;
+      cursor: pointer; letter-spacing: .5px;
+      margin-top: 4px; transition: opacity .15s;
+    }
+    .btn-auth:active { opacity: .75; }
+    .btn-auth:disabled { opacity: .5; cursor: not-allowed; }
+    .auth-error {
+      font-size: .78rem; color: var(--danger);
+      text-align: center; display: none;
+    }
+    .auth-error.show { display: block; }
+
+    /* ── HELP PANEL ── */
+    .btn-help {
+      width: 46px; height: 46px;
+      border-radius: 50%; border: 1px solid var(--border);
+      background: var(--bg); color: var(--muted);
+      font-size: 1.1rem; font-weight: 800;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+      transition: border-color .2s, color .2s;
+    }
+    .btn-help.active { border-color: var(--accent); color: var(--accent); }
+    .help-panel {
+      display: none;
+      position: absolute; bottom: 100%; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 16px 20px;
+      max-height: 55vh;
+      overflow-y: auto;
+    }
+    .help-panel.open { display: block; }
+    .voice-bar { position: relative; }
+    .help-title {
+      font-size: .6rem; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .cmd-group { margin-bottom: 14px; }
+    .cmd-group-label {
+      font-size: .6rem; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .cmd-item {
+      display: flex; flex-direction: column;
+      gap: 2px; padding: 8px 10px;
+      background: var(--bg); border-radius: 8px;
+      margin-bottom: 4px; cursor: pointer;
+      transition: border-color .15s;
+      border: 1px solid transparent;
+    }
+    .cmd-item:hover { border-color: var(--border); }
+    .cmd-item .cmd-text {
+      font-size: .85rem; color: var(--text); font-weight: 600;
+    }
+    .cmd-item .cmd-desc {
+      font-size: .72rem; color: var(--muted);
+    }
   </style>
 </head>
 <body>
+
+  <!-- AUTH SCREEN -->
+  <div id="authScreen">
+    <div class="auth-logo">YAGA</div>
+    <div class="auth-tagline">Co-piloto financiero para conductores</div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="authTab('login')">Entrar</div>
+        <div class="auth-tab" onclick="authTab('register')">Registrarme</div>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="auth-form active" id="formLogin">
+        <div class="auth-field">
+          <label>Email</label>
+          <input id="loginEmail" type="email" placeholder="tu@email.com" autocomplete="email" />
+        </div>
+        <div class="auth-field">
+          <label>Contraseña</label>
+          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <div class="auth-error" id="loginError"></div>
+        <button class="btn-auth" id="btnLogin" onclick="doLogin()">Entrar</button>
+      </div>
+
+      <!-- REGISTRO -->
+      <div class="auth-form" id="formRegister">
+        <div class="auth-field">
+          <label>Nombre</label>
+          <input id="regNombre" type="text" placeholder="Tu nombre" autocomplete="name" />
+        </div>
+        <div class="auth-field">
+          <label>Email</label>
+          <input id="regEmail" type="email" placeholder="tu@email.com" autocomplete="email" />
+        </div>
+        <div class="auth-field">
+          <label>Teléfono (opcional)</label>
+          <input id="regTel" type="tel" placeholder="5512345678" autocomplete="tel" />
+        </div>
+        <div class="auth-field">
+          <label>Contraseña</label>
+          <input id="regPass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+        </div>
+        <div class="auth-error" id="regError"></div>
+        <button class="btn-auth" id="btnRegister" onclick="doRegister()">Crear cuenta</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- HEADER -->
   <header>
@@ -448,6 +727,48 @@
   <!-- SCREEN: VEHÍCULO -->
   <div class="screen" id="screen-vehiculo">
 
+    <!-- PERFIL DEL VEHÍCULO -->
+    <div class="perfil-card">
+      <div class="perfil-identity">
+        <div class="perfil-main">
+          <div class="perfil-nombre" id="perfilNombre">
+            <span class="perfil-sin-datos">Configura tu vehículo</span>
+          </div>
+          <div class="perfil-sub" id="perfilSub"></div>
+        </div>
+        <button class="btn-edit-perfil" onclick="togglePerfilForm()">Editar</button>
+      </div>
+
+      <!-- FORMULARIO EDITABLE -->
+      <div class="perfil-form" id="perfilForm">
+        <div class="perfil-form-row">
+          <div class="perfil-field">
+            <label>Marca</label>
+            <input id="pMarca" type="text" placeholder="Nissan" />
+          </div>
+          <div class="perfil-field">
+            <label>Modelo</label>
+            <input id="pModelo" type="text" placeholder="Versa" />
+          </div>
+        </div>
+        <div class="perfil-form-row">
+          <div class="perfil-field">
+            <label>Año</label>
+            <input id="pAnio" type="number" placeholder="2019" min="1990" max="2030" />
+          </div>
+          <div class="perfil-field">
+            <label>Color</label>
+            <input id="pColor" type="text" placeholder="Blanco" />
+          </div>
+        </div>
+        <div class="perfil-field">
+          <label>Placa</label>
+          <input id="pPlaca" type="text" placeholder="ABC-1234" style="text-transform:uppercase" />
+        </div>
+        <button class="btn-guardar-perfil" onclick="guardarPerfil()">Guardar vehículo</button>
+      </div>
+    </div>
+
     <!-- SALUDO AVATAR -->
     <div style="padding:16px 16px 0">
       <div class="saludo-avatar">
@@ -509,6 +830,72 @@
 
   <!-- VOICE BAR -->
   <div class="voice-bar">
+    <!-- HELP PANEL -->
+    <div class="help-panel" id="helpPanel">
+      <div class="help-title">Comandos disponibles — toca para usar</div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-label">Registrar viaje</div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">viaje uber efectivo 90</span>
+          <span class="cmd-desc">Registra un viaje en Uber pagado en efectivo por $90</span>
+        </div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">carrera didi tarjeta 120</span>
+          <span class="cmd-desc">Viaje en DiDi pagado con tarjeta por $120</span>
+        </div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">servicio indriver efectivo 80 propina 10</span>
+          <span class="cmd-desc">Viaje en InDriver con propina incluida</span>
+        </div>
+      </div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-label">Registrar gasto</div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">gasolina 300</span>
+          <span class="cmd-desc">Registra gasto de gasolina por $300</span>
+        </div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">cargué 200</span>
+          <span class="cmd-desc">Carga de combustible por $200</span>
+        </div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">comida 50</span>
+          <span class="cmd-desc">Gasto de comida por $50</span>
+        </div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">taller 500</span>
+          <span class="cmd-desc">Gasto de mantenimiento por $500</span>
+        </div>
+      </div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-label">Jornada</div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">iniciar jornada</span>
+          <span class="cmd-desc">Comienza una nueva jornada de trabajo</span>
+        </div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">cerrar jornada</span>
+          <span class="cmd-desc">Cierra la jornada y muestra el resumen del día</span>
+        </div>
+      </div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-label">Consultas</div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">¿cómo voy?</span>
+          <span class="cmd-desc">Muestra el resumen de la jornada actual</span>
+        </div>
+        <div class="cmd-item" onclick="useCmd(this)">
+          <span class="cmd-text">mis ganancias</span>
+          <span class="cmd-desc">Balance de ingresos y gastos del día</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-help" id="btnHelp" title="Comandos disponibles" onclick="toggleHelp()">?</button>
     <button class="btn-mic" id="btnMic" title="Hablar">🎤</button>
     <input
       class="voice-input"
@@ -527,8 +914,8 @@
 
 <script>
   // ── CONFIG ──────────────────────────────────────────────
-  const API = 'http://3.19.35.76:8000/api/v1';
-  const CONDUCTOR_ID = 'default';
+  const API = '/api/v1';
+  let CONDUCTOR_ID = localStorage.getItem('yaga_conductor_id') || 'default';
 
   // ── DOM ─────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -633,7 +1020,11 @@
       const data = await res.json();
       const ok = data.data !== null;
       showToast(data.message, ok ? 'success' : '');
-      if (ok) await fetchResumen();
+      if (data.intent === 'cerrar_jornada') {
+        renderResumen({ error: true });
+      } else if (ok) {
+        await fetchResumen();
+      }
     } catch (e) {
       showToast('Sin conexión con el servidor', 'error');
     } finally {
@@ -667,9 +1058,18 @@
       showToast('No se pudo capturar audio', 'error');
     };
   } else {
-    btnMic.title = 'Tu navegador no soporta voz';
-    btnMic.style.opacity = '.4';
-    btnMic.disabled = true;
+    btnMic.title = 'Microfono no disponible en Firefox';
+    btnMic.style.opacity = '.35';
+    btnMic.style.background = 'var(--muted)';
+    btnMic.style.cursor = 'default';
+    btnMic.textContent = '🚫';
+    btnMic.addEventListener('click', function() {
+      showToast('El microfono requiere Chrome o Edge. Firefox no lo soporta.', 'error');
+    });
+    var banner = document.createElement('div');
+    banner.style.cssText = 'background:rgba(245,166,35,.1);border-top:1px solid var(--warn);color:var(--warn);font-size:.72rem;text-align:center;padding:6px 16px;';
+    banner.innerHTML = '🎤 Microfono inactivo en Firefox — usa Chrome o Edge para voz';
+    document.querySelector('.voice-bar').before(banner);
   }
 
   btnMic.addEventListener('click', () => {
@@ -712,8 +1112,38 @@
   }
 
   function renderVehiculo(v) {
-    if (v.error) { $('saludoTexto').textContent = v.error; return; }
+    if (v.error) {
+      $('saludoTexto').textContent = v.error;
+      // Sin vehículo: abrir formulario de alta
+      $('perfilNombre').innerHTML = '<span class="perfil-sin-datos">Configura tu vehículo</span>';
+      $('perfilSub').innerHTML = '';
+      $('perfilForm').classList.add('open');
+      return;
+    }
 
+    // ── Perfil del vehículo ──────────────────────────────
+    const tieneIdentidad = v.marca && v.modelo;
+    if (tieneIdentidad) {
+      $('perfilNombre').textContent = `${v.anio ? v.anio + ' ' : ''}${v.marca} ${v.modelo}`;
+      const subs = [];
+      if (v.color) subs.push(v.color);
+      if (v.placa) subs.push(v.placa.toUpperCase());
+      $('perfilSub').innerHTML = subs.map((s, i) =>
+        `<span>${i === 0 ? s : s}</span>`
+      ).join('');
+      // Pre-llenar formulario con datos actuales
+      $('pMarca').value = v.marca  || '';
+      $('pModelo').value = v.modelo || '';
+      $('pAnio').value  = v.anio   || '';
+      $('pColor').value = v.color  || '';
+      $('pPlaca').value = v.placa  || '';
+    } else {
+      $('perfilNombre').innerHTML = '<span class="perfil-sin-datos">Configura tu vehículo</span>';
+      $('perfilSub').innerHTML = '';
+      $('perfilForm').classList.add('open');
+    }
+
+    // ── Métricas km ─────────────────────────────────────
     $('vKmActuales').textContent  = v.km_actuales.toLocaleString('es-MX') + ' km';
     $('vRendimiento').textContent = v.rendimiento_kmlt + ' km/L';
 
@@ -726,13 +1156,15 @@
     aceiteEl.className   = 'value ' + (v.alerta_aceite   ? 'alerta' : 'ok');
     servicioEl.className = 'value ' + (v.alerta_servicio ? 'alerta' : 'ok');
 
-    // Saludo contextual
-    let saludo = `Listo para arrancar. Llevas ${v.km_desde_aceite.toLocaleString('es-MX')} km desde tu último cambio de aceite`;
+    // ── Saludo contextual ────────────────────────────────
+    const nombreCarro = tieneIdentidad ? `tu ${v.marca} ${v.modelo}` : 'tu vehículo';
+    let saludo = `${nombreCarro} listo. Llevas ${v.km_desde_aceite.toLocaleString('es-MX')} km desde el último cambio de aceite`;
     if (v.alerta_aceite) saludo += ' — considera revisarlo pronto.';
     else saludo += '.';
-    $('saludoTexto').textContent = saludo;
+    // Capitalizar primera letra
+    $('saludoTexto').textContent = saludo.charAt(0).toUpperCase() + saludo.slice(1);
 
-    // Alertas
+    // ── Alertas ──────────────────────────────────────────
     const banner = $('alertaBanner');
     if (v.alerta_aceite || v.alerta_servicio) {
       const msgs = [];
@@ -779,9 +1211,136 @@
     } catch(e) { showToast('Error al registrar', 'error'); }
   }
 
+  // ── PERFIL DEL VEHÍCULO ──────────────────────────────────
+  function togglePerfilForm() {
+    const form = $('perfilForm');
+    form.classList.toggle('open');
+  }
+
+  async function guardarPerfil() {
+    const marca  = $('pMarca').value.trim();
+    const modelo = $('pModelo').value.trim();
+    const anio   = parseInt($('pAnio').value);
+    const color  = $('pColor').value.trim() || null;
+    const placa  = $('pPlaca').value.trim().toUpperCase() || null;
+
+    if (!marca || !modelo) {
+      showToast('Marca y modelo son obligatorios', 'error');
+      return;
+    }
+    if (isNaN(anio) || anio < 1990 || anio > 2030) {
+      showToast('Ingresa un año válido (1990-2030)', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/vehiculo/perfil`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marca, modelo, anio, color, placa, conductor_id: CONDUCTOR_ID }),
+      });
+      const data = await res.json();
+      renderVehiculo(data);
+      $('perfilForm').classList.remove('open');
+      showToast(`✅ ${anio} ${marca} ${modelo} guardado`, 'success');
+    } catch(e) {
+      showToast('Error al guardar el perfil', 'error');
+    }
+  }
+
   // ── INIT ─────────────────────────────────────────────────
   fetchResumen();
   setInterval(fetchResumen, 30000); // refresca cada 30s
+
+  // ── AUTH ─────────────────────────────────────────────────
+  function authTab(tab) {
+    document.querySelectorAll(".auth-tab").forEach(function(t, i) {
+      t.classList.toggle("active", ["login","register"][i] === tab);
+    });
+    document.querySelectorAll(".auth-form").forEach(function(f) {
+      f.classList.remove("active");
+    });
+    var formId = tab === "login" ? "formLogin" : "formRegister";
+    document.getElementById(formId).classList.add("active");
+  }
+
+  function setAuthError(id, msg) {
+    var el = document.getElementById(id);
+    el.textContent = (typeof msg === "string") ? msg : (msg[0] && msg[0].msg ? msg[0].msg : JSON.stringify(msg)); el.classList.add("show");
+    setTimeout(function() { el.classList.remove("show"); }, 4000);
+  }
+
+  async function doLogin() {
+    var email = document.getElementById("loginEmail").value.trim();
+    var pass  = document.getElementById("loginPass").value;
+    if (!email || !pass) { setAuthError("loginError", "Completa todos los campos"); return; }
+    var btn = document.getElementById("btnLogin");
+    btn.disabled = true; btn.textContent = "Entrando…";
+    try {
+      var res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: pass })
+      });
+      var data = await res.json();
+      if (!res.ok) { setAuthError("loginError", data.detail || "Credenciales incorrectas"); return; }
+      localStorage.setItem("yaga_token", data.token);
+      localStorage.setItem("yaga_conductor_id", data.conductor_id);
+      localStorage.setItem("yaga_nombre", data.nombre);
+      document.getElementById("authScreen").classList.add("hidden");
+      fetchResumen();
+    } catch(e) { setAuthError("loginError", "Sin conexión"); }
+    finally { btn.disabled = false; btn.textContent = "Entrar"; }
+  }
+
+  async function doRegister() {
+    var nombre = document.getElementById("regNombre").value.trim();
+    var email  = document.getElementById("regEmail").value.trim();
+    var tel    = document.getElementById("regTel").value.trim() || null;
+    var pass   = document.getElementById("regPass").value;
+    if (!nombre || !email || !pass) { setAuthError("regError", "Nombre, email y contraseña son obligatorios"); return; }
+    if (pass.length < 6) { setAuthError("regError", "La contraseña debe tener al menos 6 caracteres"); return; }
+    var btn = document.getElementById("btnRegister");
+    btn.disabled = true; btn.textContent = "Creando cuenta…";
+    try {
+      var res = await fetch("/api/v1/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nombre, email: email, password: pass, telefono: tel })
+      });
+      var data = await res.json();
+      if (!res.ok) { setAuthError("regError", data.detail || "Error al registrar"); return; }
+      localStorage.setItem("yaga_token", data.token);
+      localStorage.setItem("yaga_conductor_id", data.conductor_id);
+      localStorage.setItem("yaga_nombre", data.nombre);
+      document.getElementById("authScreen").classList.add("hidden");
+      fetchResumen();
+    } catch(e) { setAuthError("regError", "Sin conexión"); }
+    finally { btn.disabled = false; btn.textContent = "Crear cuenta"; }
+  }
+
+  // Mostrar/ocultar auth screen al cargar
+  if (localStorage.getItem("yaga_token") && localStorage.getItem("yaga_conductor_id")) {
+    document.getElementById("authScreen").classList.add("hidden");
+  } else {
+    document.getElementById("authScreen").classList.remove("hidden");
+  }
+
+  // ── HELP PANEL ───────────────────────────────────────────
+  function toggleHelp() {
+    var panel = document.getElementById("helpPanel");
+    var btn   = document.getElementById("btnHelp");
+    panel.classList.toggle("open");
+    btn.classList.toggle("active");
+  }
+
+  function useCmd(el) {
+    var text = el.querySelector(".cmd-text").textContent;
+    document.getElementById("cmdInput").value = text;
+    document.getElementById("helpPanel").classList.remove("open");
+    document.getElementById("btnHelp").classList.remove("active");
+    document.getElementById("cmdInput").focus();
+  }
 </script>
 </body>
 </html>

@@ -3,6 +3,35 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Conductores registrados (auth)
+CREATE TABLE IF NOT EXISTS conductores (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre          VARCHAR(100) NOT NULL,
+    email           VARCHAR(150) UNIQUE NOT NULL,
+    password_hash   TEXT NOT NULL,
+    telefono        VARCHAR(20),
+    activo          BOOLEAN DEFAULT TRUE,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_conductores_email ON conductores(email);
+
+-- Vehículos de los conductores
+CREATE TABLE IF NOT EXISTS vehiculos (
+    id                  SERIAL PRIMARY KEY,
+    conductor_id        VARCHAR(100) NOT NULL UNIQUE DEFAULT 'default',
+    km_actuales         NUMERIC(10,1) NOT NULL DEFAULT 0,
+    km_ultimo_aceite    NUMERIC(10,1) NOT NULL DEFAULT 0,
+    km_ultimo_servicio  NUMERIC(10,1) NOT NULL DEFAULT 0,
+    rendimiento_kmlt    NUMERIC(5,2) DEFAULT 10.0,
+    marca               VARCHAR(100),
+    modelo              VARCHAR(100),
+    anio                INTEGER,
+    color               VARCHAR(50),
+    placa               VARCHAR(20),
+    notas               TEXT,
+    updated_at          TIMESTAMP DEFAULT NOW()
+);
+
 -- Jornadas de trabajo
 CREATE TABLE IF NOT EXISTS jornadas (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -39,7 +68,7 @@ CREATE TABLE IF NOT EXISTS gastos (
 );
 
 -- Índices para consultas rápidas
-CREATE INDEX idx_viajes_jornada ON viajes(jornada_id);
-CREATE INDEX idx_gastos_jornada ON gastos(jornada_id);
-CREATE INDEX idx_jornadas_fecha ON jornadas(fecha);
-CREATE INDEX idx_jornadas_conductor ON jornadas(conductor_id);
+CREATE INDEX IF NOT EXISTS idx_viajes_jornada ON viajes(jornada_id);
+CREATE INDEX IF NOT EXISTS idx_gastos_jornada ON gastos(jornada_id);
+CREATE INDEX IF NOT EXISTS idx_jornadas_fecha ON jornadas(fecha);
+CREATE INDEX IF NOT EXISTS idx_jornadas_conductor ON jornadas(conductor_id);

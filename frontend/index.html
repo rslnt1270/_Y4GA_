@@ -80,15 +80,17 @@
 
     /* ── USER MENU ── */
     .user-btn {
-      width: 34px; height: 34px;
-      border-radius: 50%;
+      height: 34px;
+      border-radius: 17px;
       background: var(--accent);
       color: #0f1923;
-      font-size: .85rem;
+      font-size: .78rem;
       font-weight: 900;
       border: none;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      gap: 4px;
+      padding: 0 12px;
       flex-shrink: 0;
       transition: opacity .15s;
       letter-spacing: 0;
@@ -1216,7 +1218,7 @@
     <span id="fecha" style="font-size:.75rem;color:var(--muted)"></span>
     <div class="user-menu-wrap">
       <div class="status-dot" id="statusDot"></div>
-      <button class="user-btn" id="userBtn" onclick="toggleUserMenu()">Y</button>
+      <button class="user-btn" id="userBtn" onclick="toggleUserMenu()" title="Menú de usuario">Y ▾</button>
     </div>
   </header>
 
@@ -1234,6 +1236,9 @@
     </div>
     <div class="ud-item" onclick="abrirMapa()">
       <span class="ud-icon">🗺️</span> Mapa histórico
+    </div>
+    <div class="ud-item" onclick="$('userDropdown').classList.remove('open'); abrirImport()">
+      <span class="ud-icon">📥</span> Importar historial Uber/DiDi
     </div>
     <div class="ud-item danger" onclick="cerrarSesion()">
       <span class="ud-icon">🚪</span> Cerrar sesión
@@ -2006,7 +2011,7 @@
     const nombre = getYaga('yaga_nombre') || '?';
     const email  = getYaga('yaga_email')  || '';
     const inicial = nombre.trim().charAt(0).toUpperCase();
-    $('userBtn').textContent  = inicial;
+    $('userBtn').textContent  = inicial + ' ▾';
     $('udNombre').textContent = nombre;
     $('udEmail').textContent  = email;
   }

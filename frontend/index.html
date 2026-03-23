@@ -654,6 +654,7 @@
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       padding: 32px 24px;
+      /* necesario para posicionar el boton de regreso */
     }
     #authScreen.hidden { display: none; }
     .auth-logo {
@@ -721,6 +722,14 @@
       text-align: center; display: none;
     }
     .auth-error.show { display: block; }
+    .auth-back {
+      position: absolute; top: 20px; left: 20px;
+      font-size: .75rem; color: var(--muted);
+      text-decoration: none; letter-spacing: .5px;
+      padding: 6px 10px; border-radius: 8px;
+      transition: color .15s, background .15s;
+    }
+    .auth-back:hover { color: var(--text); background: var(--surface); }
     .auth-remember {
       display: flex; align-items: center; gap: 8px;
       font-size: .82rem; color: var(--muted); cursor: pointer;
@@ -1156,6 +1165,7 @@
 
   <!-- AUTH SCREEN -->
   <div id="authScreen">
+    <a href="/" class="auth-back" title="Volver al inicio">← Apps</a>
     <div class="auth-logo">YAGA</div>
     <div class="auth-tagline">Co-piloto financiero para conductores</div>
     <div class="auth-card">

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>y4ga.app</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1923;
+      --surface: #1a2433;
+      --border:  #263040;
+      --text:    #e8edf2;
+      --muted:   #5a7080;
+      --accent:  #00c896;
+      --font: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+    }
+
+    .brand {
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: 8px;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .tagline {
+      font-size: .72rem;
+      color: var(--muted);
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      margin-bottom: 52px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    @media (max-width: 420px) {
+      .grid { grid-template-columns: 1fr; max-width: 320px; }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 22px;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      transition: border-color .2s, transform .15s;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .card:active { transform: translateY(0); opacity: .85; }
+
+    .card-icon {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .card-name {
+      font-size: 1.1rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .card-desc {
+      font-size: .75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .card-arrow {
+      margin-top: auto;
+      padding-top: 16px;
+      font-size: .75rem;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .footer {
+      margin-top: 48px;
+      font-size: .65rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="brand">Y4GA</div>
+  <div class="tagline">Selecciona una app</div>
+
+  <div class="grid">
+
+    <a class="card" href="/yaga/">
+      <div class="card-icon">🚕</div>
+      <div class="card-name">YAGA</div>
+      <div class="card-desc">Co-piloto financiero para conductores de plataformas</div>
+      <div class="card-arrow">Entrar →</div>
+    </a>
+
+    <a class="card" href="/poleana/">
+      <div class="card-icon">🎲</div>
+      <div class="card-name">POLEANA</div>
+      <div class="card-desc">Juego de mesa digital multijugador en tiempo real</div>
+      <div class="card-arrow">Entrar →</div>
+    </a>
+
+  </div>
+
+  <div class="footer">y4ga.app &nbsp;·&nbsp; 2026</div>
+
+</body>
+</html>

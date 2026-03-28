@@ -43,3 +43,5 @@ data_science/YAGA_Mapa_Historico.html
 .env
 secrets/
 mi-auth-nueva
+login.json
+login_response.json

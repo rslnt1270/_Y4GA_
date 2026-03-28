@@ -1,3 +1,4 @@
+
 __pycache__/
 *.pyc
 .env
@@ -38,3 +39,7 @@ YAGA_Libro_Mayor_*.csv
 # Archivos generados (no fuente)
 data_science/geocode_cache.json
 data_science/YAGA_Mapa_Historico.html
+=======
+.env
+secrets/
+mi-auth-nueva

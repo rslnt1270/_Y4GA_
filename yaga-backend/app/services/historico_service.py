@@ -361,6 +361,27 @@ async def get_mapa_data(conductor_id: str) -> list:
         ]
 
 
+async def get_ganancias_semanal(conductor_id: str) -> list:
+    """Retorna ingresos agrupados por día de la semana (últimos 90 días)."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT
+                EXTRACT(DOW FROM fecha_local AT TIME ZONE 'America/Mexico_City') AS dia_semana,
+                COALESCE(SUM(monto_bruto), 0) AS total,
+                COUNT(*) AS viajes
+            FROM viajes_historicos
+            WHERE conductor_id = $1
+              AND fecha_local >= NOW() - INTERVAL '90 days'
+            GROUP BY dia_semana
+            ORDER BY dia_semana
+            """,
+            conductor_id,
+        )
+        return [{"dia_semana": int(r["dia_semana"]), "total": round(float(r["total"]), 2), "viajes": int(r["viajes"])} for r in rows]
+
+
 async def get_promedio_historico(conductor_id: str) -> float:
     """Promedio por viaje del conductor. Fallback: promedio global o $72.94."""
     pool = await get_pool()

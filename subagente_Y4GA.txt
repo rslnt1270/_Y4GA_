@@ -1,0 +1,400 @@
+En el mapa vemos puntos con zonas de viajes, en mi caso de historico de viajes yo tengo en MORELIA y CDMX, necesitamos mejorar el Frontend en cuanto al despliegue de los viajes, sus transiciones, necestiamos mostrar menos puntos por zonas al tener zoom alejado, en cuando hacemo zoom ir mostrando mas viajes. Ademas a la hora de correr el recorrido en el mapa, mostrar la info solo de ese viaje, ocultar los demas puntos para una mejor visualizacion
+Entendido. Veo el código del mapa. Los problemas son:
+1. `maxClusterRadius` fijo (40) sin responder al zoom
+2. Al hacer click en un viaje, los otros markers se "dimean" en opacity pero siguen mostrando en el cluster → el cluster group sigue visible con todos los puntos
+3. Hay que ocultar el cluster group entero al seleccionar un viaje y mostrar solo ese marker
+
+Voy a hacer 3 cambios:
+**Cambio 1:** `maxClusterRadius` dinámico según zoom (menos clusters cuando alejado, más detalle al acercar):
+**Cambio 2:** Al hacer click, ocultar el cluster entero y mostrar solo el marker seleccionado en un layer propio:
+**Cambio 3:** En el click handler, ocultar el cluster y poner solo el marker activo en `selectedLayer`:
+**Cambio 4:** El `popupclose` debe restaurar el cluster (el popup ahora está en `selectedLayer`, no en el marker original):
+Listo. Ahora verifico que el resultado quedó coherente:
+Todo bien. Resumen de los cambios aplicados:
+
+---
+
+**1. Clustering adaptativo por zoom** (`maxClusterRadius` dinámico)
+- Zoom ≤ 9 → radio 120px → muy pocos clusters grandes (vista nacional)
+- Zoom 11 → 80px → clusters por zona (CDMX/Morelia separadas)
+- Zoom 12-13 → 35-55px → clusters por colonia
+- Zoom ≥ 15 → clustering desactivado → puntos individuales
+
+**2. Al tocar un viaje: mapa limpio solo con ese trayecto**
+- Se elimina el cluster group completo del mapa (`removeLayer(cluster)`)
+- Se crea un marker individual en `selectedLayer` solo con ese viaje
+- Se dibuja la ruta/polyline del viaje seleccionado
+- El mapa hace flyTo al trayecto completo
+
+**3. Al cerrar el popup: se restaura todo**
+- `restoreMarkers()` limpia `selectedLayer`, devuelve el cluster (`addLayer(cluster)`) y hace flyToBounds a todos los viajes
+
+Para desplegar en EC2 sube el `index.html` al servidor como lo haces normalmente.
+Tengo los datos. Subo el `index.html` directo via SCP al EC2.
+Sin permisos directos a `/var/www/yaga/`. Lo subo al home y luego lo muevo con sudo:
+Desplegado. Entra a `y4ga.app` y prueba el mapa — al hacer zoom out verás muchos menos clusters, al acercar se irán desglosando, y al tocar un viaje desaparece todo lo demás y queda solo ese trayecto.
+Tenemos que mejorar la interaccion del usuario con el mapa, mostrar puntos en el mapa a partir de consultas, en vez de mostar el mapa global, al hacer consultas vamos a tener una mejor vista de la interfaz. Agregar  modulo para consultas. Al mostrar la ruta aproximada el mapa se ve lejos, en vez de hacer zoom
+Déjame leer el código actual del mapa completo para entender toda la sección antes de modificar.
+Tengo todo el contexto. Voy a hacer 4 edits:
+1. CSS para la barra de filtros
+2. HTML de la barra de filtros
+3. JS: lógica de filtros + función `aplicarFiltros` + fix de `restoreMarkers`
+4. Fix del zoom de ruta (pad demasiado grande)
+Ahora mostrar la barra de filtros con chips de plataforma dinámicos al cargar, y reemplazar el `fitBounds` estático por `aplicarFiltros()`:
+Reemplazar el `fitBounds` estático al final por `aplicarFiltros()`:
+Fix del zoom de ruta (pad 0.28 → 0.08 y minZoom para no alejarse):
+Verifico que `limpiarRuta` no quede declarada dos veces (la nueva versión la declaro antes y después del bloque de filtros accidentalmente):
+Solo hay una. Verifico también que el flujo después del loop de viajes esté correcto:
+Todo listo. Subiendo al EC2:
+Desplegado. Esto es lo que cambió:
+
+---
+
+**Barra de filtros** (entre la leyenda y el mapa)
+- Chips de plataforma: **Todos / Uber / DiDi** — se generan dinámicamente desde tus datos, solo aparece el chip de DiDi si tienes viajes DiDi
+- Chips de monto: **$$ / $200+ / $130-199 / $90-129 / <$90**
+- Al activar un filtro, el cluster se re-renderiza solo con los viajes que coinciden y el mapa hace `flyToBounds` a esa zona → si filtras solo Morelia, el mapa se centra en Morelia automáticamente
+- El contador al fondo derecho muestra cuántos viajes están visibles cuando aplicas un filtro
+
+**Zoom de ruta** al ver un recorrido individual
+- Antes: `pad(0.28)` → el mapa se alejaba demasiado
+- Ahora: `pad(0.08)` + `minZoom: 13` → se ajusta justo al trayecto sin alejarse
+La transicion del zoom en el mapa sigue teniendo errores
+[Request interrupted by user]
+[Request interrupted by user]
+Déjame leer el estado completo del frontend y el backend antes de modificar.
+Ahora tengo todo el contexto. Voy a hacer todos los cambios de una vez: fix del cluster visible durante ruta, tabs más grandes con iconos, panel de consultas por fecha/texto, y corrección de zoom.
+Ahora el JS: fix del `ignorarPopupClose` + extender `aplicarFiltros` con texto y fechas + exponer `mapaLimpiar`:
+Fix del `popupclose` para respetar el flag:
+También poner `ignorarPopupClose = true` dentro del click handler de marker cuando hace el switch de trip:
+Mostrar el panel de consultas cuando cargan los datos:
+Verifico que todo esté coherente y despliego:
+Todo correcto. Desplegando:
+Desplegado. Resumen de cambios:
+
+---
+
+**Tabs más grandes** — Icon arriba + texto, padding mayor, borde activo de 2px, fondo sutil en el tab activo
+
+**Panel de consultas** (visible sobre los filtros de chips, aparece al cargar los datos):
+- Barra de búsqueda por texto → filtra por origen o destino en tiempo real mientras escribes
+- Selectores de fecha "Desde / Hasta" → filtra al cambiar
+- Botón ✕ limpia todo (texto, fechas, chips) y vuelve al mapa completo
+- El mapa hace `flyToBounds` automáticamente a los resultados filtrados
+
+**Fix del cluster visible durante ruta** — `ignorarPopupClose` flag evita que el `popupclose` (que se disparaba al limpiar el layer anterior) restaure el cluster mientras estás viendo un viaje individual
+
+**Zoom de ruta mejorado** — `pad(0.08)` + `minZoom: 13` para ajustar al trayecto sin alejar
+Déjame ver dónde está la barra de voz en el layout para verificar si es visible en el mapa.
+Claro. La barra de voz está fuera de las screens y siempre visible. Solo hay que ocultarla cuando el tab activo es `mapa` (y mostrarla en los demás). Un cambio mínimo en `switchTab`:
+Listo. El único cambio fue en `switchTab`: cuando el tab activo es `mapa`, la barra de voz se oculta (`display:none`). Al regresar a Jornada o Vehículo, vuelve a aparecer. El panel de consultas del mapa (búsqueda por texto + fechas) queda como el único canal de interacción en esa pantalla.
+En la ventana de MAPA hay que actualizar diseño de HTML y CSS, quiero desplegar en esta ventana el modulo para la consultas del historico de viajes, por ejemplo conocer los viajes en un periodo de tiempo, una vez teniendo ese resultado, mostar en el depa los ID de esos viajes.
+Déjame leer completo el HTML del screen-mapa para rediseñarlo desde cero.
+Tengo todo el contexto. Voy a reescribir el CSS del mapa, el HTML de la pantalla, y actualizar el JS en una sola pasada coordinada.
+
+**Edit 1 — CSS completo del mapa (reemplaza todos los bloques viejos):**
+**Edit 2 — HTML de `#screen-mapa` completo:**
+**Edit 3 — JS: reemplazar referencias de display a los IDs viejos:**
+**Edit 4 — JS: actualizar clases en `mapaFiltrar` y `mapaLimpiar`:**
+**Edit 5 — JS: poblar el drawer de resultados dentro de `aplicarFiltros`:**
+Verifico referencias rotas antes de desplegar:
+Sin referencias viejas. Desplegando:
+Desplegado. El nuevo layout del tab Mapa queda así:
+
+```
+┌──────────────────────────────────────────────┐
+│ Viajes: 2,396 · Total: $183K · Prom: $76 · Período │  ← stats scroll
+├──────────────────────────────────────────────┤
+│  Desde [____] Hasta [____]  [✕ Limpiar]     │
+│  [🔍 Buscar por origen o destino…]           │  ← consulta
+├──────────────────────────────────────────────┤
+│ [Todos][Uber][DiDi] | [$$][200+][130][$90][<90]  ● ● ● ● │  ← chips + leyenda
+├──────────────────────────────────────────────┤
+│                                              │
+│              MAPA                            │  ← mapa ocupa todo el espacio restante
+│                                              │
+├──────────────────────────────────────────────┤
+│ ▲  12 viajes · $1,240 total · $103 prom     │  ← drawer colapsado (toca para abrir)
+│  [abc12345] [def67890] [ghi11111] [...]      │  ← IDs clickeables → zoom al viaje
+└──────────────────────────────────────────────┘
+```
+
+Al hacer clic en un ID del drawer, el mapa oculta todos los demás puntos y hace zoom al trayecto de ese viaje.
+No se actializan los cambios en la WEB  En la ventana del mapa, quiero se abra una ventana emergente para las consultas, o en su defecto disponer parte de la pantalla para el MAPA y otra para recibir el input del usuario.
+Primero verifico el archivo en EC2 y el problema de caché.
+El archivo en EC2 sí tiene los cambios (`mapa-control`: 3, `mapaStats`: 0). El problema es caché de **Cloudflare**. Primero configuro nginx para que los HTML no se cacheen, luego purgo:
+nginx ya tiene `no-cache` + `Cloudflare-CDN-Cache-Control: no-store`. El problema es que Cloudflare tiene la versión vieja cacheada. Voy a forzar la purga directamente desde EC2:
+Ahí está el problema. Hay `/var/www/yaga/yaga/index.html` (el archivo viejo, 90KB). Todo este tiempo he estado actualizando `/var/www/yaga/index.html` pero la URL `/yaga/` sirve el que está dentro del subdirectorio `yaga/`. Corrijo:
+Ahora sí está en la ruta correcta. Pero el usuario también quiere el nuevo diseño: **panel lateral o ventana emergente** para las consultas. Voy a implementar un **botón flotante "Consultas"** que abre un panel lateral deslizable sobre el mapa. Así el mapa conserva su espacio y las consultas tienen su propia área clara.
+Ahora rediseño con **panel lateral deslizable** (FAB "Consultas" → abre panel sobre el mapa):
+**HTML del #screen-mapa — reescritura completa:**
+**JS — actualizar referencias de clases y agregar funciones del panel:**
+**JS — actualizar referencia del drawer de resultados (`mapaResultados` → `mpResultados`):**
+Verifico que no queden referencias rotas y despliego:
+Desplegado en la ruta correcta. Resumen de lo que cambió:
+
+---
+
+**Bug del deploy corregido** — Los cambios anteriores siempre iban a `/var/www/yaga/index.html` pero la URL `/yaga/` servía desde `/var/www/yaga/yaga/index.html`. Ahora el deploy apunta al directorio correcto.
+
+**Nuevo diseño del mapa:**
+
+- **Stats bar** fina en la parte superior (Viajes · Ingreso · Promedio · Período)
+- **El mapa ocupa TODO el espacio restante** — sin controles que quiten espacio
+- **FAB "🔍 Consultas"** flotante — abre el panel lateral
+- **FAB "+ Importar"** flotante debajo
+
+**Panel lateral deslizable (slide-in desde la izquierda):**
+- Se abre con el botón Consultas, se cierra con ✕ o tocando el fondo oscuro
+- Secciones: Período (desde→hasta) · Buscar por dirección · Plataforma · Rango de monto · Referencia de colores
+- Los filtros se aplican en tiempo real mientras escribes/seleccionas
+- **Resultados al fondo del panel**: `N viajes · $X total · $Y prom` + chips con IDs clickeables que cierran el panel y hacen zoom al viaje en el mapa
+Déjame leer el estado actual del perfil de usuario y del vehículo.
+Tengo todo el contexto. Voy a escribir los 3 cambios: CSS, HTML y JS.
+
+**Edit 1 — CSS (conductor card + car avatar):**
+**Edit 2 — HTML: conductor card + car avatar en perfil-identity:**
+**Edit 3 — JS: funciones de color, SVG del auto, foto, y actualizar `initUserMenu` + `renderVehiculo`:**
+Ahora actualizar `renderVehiculo` para que dibuje el avatar del auto con el color guardado:
+Deploy y luego atiendo el bug del botón Consultas:
+Ahora el bug del botón Consultas. El problema es que `window.abrirPanel` se define **dentro** de `initMapa()` que solo corre cuando se abre el tab Mapa — pero el botón FAB existe en el DOM desde antes. Verifico:
+O seja el problema de CSS: la transición de `left: -340px` se clipea por `overflow: hidden` en `#screen-mapa`. Lo cambio a `transform: translateX` y muevo el `overflow: hidden` a `.mapa-wrap`:
+<analysis>
+Let me analyze the conversation chronologically to create a comprehensive summary.
+
+1. **Initial Map Improvements** - User requested better map visualization with:
+   - Fewer cluster points when zoomed out, more when zoomed in
+   - When running a trip route, hide other points and show only that trip's info
+
+2. **Deploy to EC2** - User asked to deploy directly to EC2. Claude found the correct SSH key and deployed via SCP.
+
+3. **Map Module Enhancement** - User wanted:
+   - A query/filter module on the map
+   - Better zoom when showing route (was zooming out too much)
+
+4. **Key Bug: Wrong EC2 path** - All previous deployments went to `/var/www/yaga/index.html` but the URL `/yaga/` actually serves from `/var/www/yaga/yaga/index.html`. Fixed by changing deploy path.
+
+5. **Voice bar scoping** - User said voice commands should only be for capturing records (Jornada tab), not map. Fixed by hiding `.voice-bar` when tab is `mapa`.
+
+6. **Full map screen redesign** - User wanted:
+   - Sliding consultation panel (FAB "Consultas" → slide-in panel)
+   - Better HTML/CSS layout
+   - Bigger tabs with icons
+
+7. **Cache issue** - User reported changes not showing. Discovered the wrong deploy path. Fixed to use `/var/www/yaga/yaga/index.html`.
+
+8. **Conductor Profile** - User wanted:
+   - Conductor name, ID display
+   - Photo upload
+   - Vehicle avatar with color matching the saved color
+
+9. **Pending bug** - User reported "el botón de consultas no despliega nada" (Consultas button doesn't show anything). Claude identified this is likely a CSS clipping issue (`overflow: hidden` on `#screen-mapa` clipping the panel that starts at `left: -340px`). Fix was in progress: change to `transform: translateX` approach and add `overflow: hidden` to `.mapa-wrap` instead.
+
+Key files:
+- `/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html` - main frontend file
+- EC2 correct path: `/var/www/yaga/yaga/index.html`
+
+Current work at time of summary request:
+- Just deployed conductor profile (photo, name, ID, vehicle avatar SVG)
+- Was fixing the Consultas button CSS bug (overflow clipping) - had edited `#screen-mapa` to remove `overflow: hidden`, but the edit to add `overflow: hidden` to `.mapa-wrap` and change panel to `transform: translateX` was NOT completed yet - only the first part of the fix was done (removing overflow from #screen-mapa CSS).
+
+Let me also note the key JS functions and structures added:
+- `colorNameToHex(nombre)` - maps Spanish color names to hex
+- `darkenHex(hex, f)` - darkens a hex color
+- `carAvatarSVG(colorNombre)` - returns SVG car silhouette
+- `subirFotoConductor(input)` - handles photo upload to localStorage
+- `renderFotoConductor(b64, nombre)` - renders photo or initials
+- `initPerfilConductor()` - initializes the conductor profile card
+- `window.abrirPanel()` / `window.cerrarPanel()` - panel toggle functions
+- `window.mapaFiltrar()` - chip filter function
+- `window.mapaAplicar` = `aplicarFiltros`
+- `window.mapaLimpiar()` - clear all filters
+- `window.mapaMostrarViaje(tripId)` - zoom to specific trip
+- `ignorarPopupClose` flag - prevents cluster restoration during trip selection
+- `aplicarFiltros()` - main filter function with text/date/platform/amount filtering
+
+The CSS issue: the panel `.mapa-panel` starts at `left: -340px` (or was going to be changed to `transform: translateX(-110%)`). The `overflow: hidden` on `#screen-mapa` clips it. The fix removes `overflow: hidden` from `#screen-mapa` and moves it to `.mapa-wrap`. BUT the edit to change `.mapa-panel` to use `transform` and add `overflow: hidden` to `.mapa-wrap` was NOT yet written when the summary was requested. Only the first part (removing overflow from #screen-mapa) was completed.
+</analysis>
+
+<summary>
+1. Primary Request and Intent:
+   - **Map visualization improvements**: Fewer cluster points at low zoom, more at high zoom; hide all other points when viewing a specific trip's route
+   - **Route zoom fix**: When displaying a trip route, the map was zooming out too much
+   - **Query/filter module**: A consultation panel on the map screen allowing filtering by date range, text search, platform (Uber/DiDi), and amount range
+   - **Results panel**: After querying, display trip IDs as clickable chips that zoom to the trip on the map
+   - **Tabs improvement**: Larger navigation tabs with icons for Jornada, Vehículo, Mapa
+   - **Voice bar scoping**: Voice commands only visible in Jornada tab (for capturing records), hidden on Mapa tab
+   - **Full map screen redesign**: Sliding consultation panel (FAB "🔍 Consultas" opens slide-in panel from left), stats bar at top, map takes full remaining space
+   - **Conductor profile**: Show conductor name, ID, profile photo (uploadable), vehicle avatar SVG colored by the saved vehicle color
+   - **Deploy directly to EC2 via SSH** (per feedback memory)
+
+2. Key Technical Concepts:
+   - Leaflet.js with MarkerCluster for clustered map points
+   - Dynamic `maxClusterRadius` function based on zoom level
+   - `ignorarPopupClose` flag to prevent cluster restoration during trip transitions
+   - `selectedLayer` + `cluster` layer management (hide cluster, show single trip marker)
+   - `window.mapaFiltrar`, `window.mapaAplicar`, `window.mapaLimpiar`, `window.abrirPanel`, `window.cerrarPanel`, `window.mapaMostrarViaje` — global functions exposed from within `initMapa()` closure
+   - Client-side filtering of pre-loaded trips array (`viajes`) by date range, text, platform, amount
+   - Photo stored as base64 in `localStorage` under key `yaga_foto_${conductorId}`
+   - Vehicle avatar: inline SVG generated by `carAvatarSVG(colorNombre)` with Spanish→hex color mapping
+   - EC2 deploy: correct path is `/var/www/yaga/yaga/index.html` (not `/var/www/yaga/index.html`)
+   - Cloudflare CDN caching: nginx already has `Cache-Control: no-cache, no-store` headers
+   - CSS sliding panel: `position: absolute` within `position: relative` `.mapa-wrap`; transition via `left` property (being changed to `transform: translateX` to fix clipping bug)
+
+3. Files and Code Sections:
+
+   - **`/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html`** (main file, all changes here)
+     - **Cluster config** (dynamic radius):
+       ```javascript
+       const cluster = L.markerClusterGroup({
+         maxClusterRadius: function(zoom) {
+           if (zoom <= 9)  return 120;
+           if (zoom <= 11) return 80;
+           if (zoom <= 12) return 55;
+           if (zoom <= 13) return 35;
+           return 20;
+         },
+         disableClusteringAtZoom: 15,
+         ...
+       });
+       ```
+     - **`ignorarPopupClose` flag + click handler**:
+       ```javascript
+       let ignorarPopupClose = false;
+       marker.on('click', () => {
+         if (viajeActivo === v) return;
+         viajeActivo = v;
+         ignorarPopupClose = true;
+         mapaInstance.removeLayer(cluster);
+         limpiarRuta();
+         selectedLayer.clearLayers();
+         ignorarPopupClose = false;
+         // ... create solo marker, openPopup, flyTo, dibujarRuta
+       });
+       mapaInstance.on('popupclose', () => {
+         if (ignorarPopupClose) return;
+         limpiarRuta();
+         restoreMarkers();
+       });
+       ```
+     - **`aplicarFiltros()` function** — filters by platform, amount, text, date range; updates stats; populates trip ID chips in `#mpResultados`; calls `flyToBounds` on filtered set
+     - **Tab CSS** — tabs now larger with icon + text, `padding: 13px 8px 11px`, `font-size: .68rem`, icon class `.tab-icon`
+     - **Map screen HTML** — new structure:
+       ```html
+       #screen-mapa
+         .mc-stats (stats bar, id="mapaControl")
+         .mapa-wrap (position: relative)
+           .mapa-panel-bg (dim overlay, id="mapaPanelBg")
+           .mapa-panel (slide-in panel, id="mapaPanel")
+             .mp-head, .mp-body, .mp-results, .mp-actions
+           #mapaLeaflet
+           .mapa-empty / #mapaCargando
+           .mapa-fabs
+             #mapaFabQuery (🔍 Consultas)
+             #mapaFab (+ Importar)
+       ```
+     - **Conductor profile card** (top of screen-vehiculo):
+       ```html
+       <div class="conductor-card" id="conductorCard">
+         <div class="cc-photo-wrap">
+           <div class="cc-photo" id="ccPhoto">
+             <span class="cc-initials" id="ccInitials">?</span>
+           </div>
+           <button class="cc-photo-btn" onclick="document.getElementById('ccFileInput').click()">📷</button>
+           <input type="file" id="ccFileInput" accept="image/*" style="display:none" onchange="subirFotoConductor(this)">
+         </div>
+         <div class="cc-info">
+           <div class="cc-name" id="ccName">—</div>
+           <div class="cc-id-row">
+             <span class="cc-id-label">ID</span>
+             <span class="cc-id" id="ccId">—</span>
+           </div>
+           <div class="cc-email" id="ccEmail">—</div>
+         </div>
+       </div>
+       ```
+     - **Vehicle avatar** added to `perfil-identity`:
+       ```html
+       <div class="car-avatar-wrap" id="carAvatarWrap">
+         <div id="carAvatarSvg"></div>
+       </div>
+       ```
+     - **Key JS functions added**:
+       ```javascript
+       function colorNameToHex(nombre) { /* maps blanco/negro/rojo/azul/etc → hex */ }
+       function darkenHex(hex, f = 0.28) { /* darkens hex by factor */ }
+       function carAvatarSVG(colorNombre) { /* returns SVG string for side-view car */ }
+       function subirFotoConductor(input) { /* FileReader → base64 → localStorage */ }
+       function renderFotoConductor(b64, nombre) { /* shows photo or initials */ }
+       function initPerfilConductor() { /* loads name/id/email/photo from localStorage */ }
+       // in renderVehiculo():
+       const avatarEl = $('carAvatarSvg');
+       if (avatarEl) avatarEl.innerHTML = carAvatarSVG(v.color || '');
+       // initUserMenu() now calls initPerfilConductor()
+       ```
+     - **Route zoom fix**: `pad(0.28)` → `pad(0.08)`, added `minZoom: 13`
+     - **`switchTab` update**: hides `.voice-bar` when tab is `mapa`
+
+   - **EC2 server** — deploy target confirmed as `/var/www/yaga/yaga/index.html` (subdirectory, not root)
+
+4. Errors and Fixes:
+
+   - **Wrong EC2 deploy path**: All early deploys went to `/var/www/yaga/index.html`. The URL `y4ga.app/yaga/` actually serves from `/var/www/yaga/yaga/index.html` (a subdirectory with its own index.html). Fixed by changing all subsequent SCP/cp commands to target `/var/www/yaga/yaga/index.html`.
+   
+   - **Cloudflare cache**: User couldn't see changes. Nginx has `Cache-Control: no-cache, no-store` and `Cloudflare-CDN-Cache-Control: no-store` headers already set. Root cause was the wrong file path, not cache.
+   
+   - **Cluster visible during route**: When clicking a trip marker while another trip was open, `popupclose` fired (from clearing `selectedLayer`) which called `restoreMarkers()` which re-added the cluster before the new solo marker was set up. Fixed with `ignorarPopupClose = true` flag set around the layer clear operations.
+   
+   - **`limpiarRuta` declared twice**: In an early edit, `limpiarRuta` appeared to be declared twice. Verified with grep that only one declaration existed — no fix needed.
+   
+   - **CSS sliding panel bug (ONGOING)**: Panel starts at `left: -340px`; `overflow: hidden` on `#screen-mapa` clips it so the transition is invisible. User reported "el botón de consultas no despliega nada". Partial fix applied: removed `overflow: hidden` from `#screen-mapa`. Remaining fix (not yet deployed): add `overflow: hidden` to `.mapa-wrap`, change `.mapa-panel` to use `transform: translateX(-110%)` → `transform: translateX(0)` instead of `left` transition.
+   
+   - **Wrong class names in JS after CSS refactor**: After renaming `.filtro-chip`/`.filtro-grupo` to `.mp-chip`/`.mp-chips`, the JS functions `mapaFiltrar` and `mapaLimpiar` referenced old class names. Fixed by updating all `.closest('.filtro-grupo')` → `.closest('.mp-chips')` and `.filtro-chip` → `.mp-chip`.
+
+5. Problem Solving:
+
+   - **Dynamic cluster radius**: Implemented as a function `maxClusterRadius: function(zoom)` returning different values per zoom level (120px at zoom≤9, down to 20px at zoom≥14).
+   - **Solo trip view**: Removes entire cluster from map, adds single `L.circleMarker` to `selectedLayer`, draws route via Nominatim geocoding + OSRM routing. On `popupclose`, restores cluster and calls `aplicarFiltros()`.
+   - **Client-side filtering**: All trip data loaded once; `aplicarFiltros()` filters in-memory by all criteria and re-populates cluster with `cluster.clearLayers()` + `cluster.addLayer()`.
+   - **Panel slide-in UX**: FAB "🔍 Consultas" → `window.abrirPanel()` adds `.open` class to `.mapa-panel` and `.mapa-panel-bg`. Clicking IDs calls `window.mapaMostrarViaje(tripId)` which closes panel and fires click on the marker.
+   - **Vehicle avatar color**: Spanish color name text input (e.g. "Blanco") mapped to hex via `colorNameToHex()`, then passed to `carAvatarSVG()` which generates an inline SVG side-view car with wheels, windows, headlights/taillights.
+   - **Profile photo**: Stored as base64 DataURL in `localStorage['yaga_foto_' + conductorId]`; displayed as `<img>` tag or initials fallback.
+
+6. All User Messages:
+   - "En el mapa vemos puntos con zonas de viajes... necesitamos mejorar el Frontend en cuanto al despliegue de los viajes, sus transiciones, necestiamos mostrar menos puntos por zonas al tener zoom alejado... Ademas a la hora de correr el recorrido en el mapa, mostrar la info solo de ese viaje, ocultar los demas puntos"
+   - "Para desplegar en EC2 sube el index.html al servidor como lo haces normalmente." (requesting direct EC2 deploy)
+   - "La transicion del zoom en el mapa sigue teniendo errores [image]. Ademas no veo en el frontend el modulo para hacer consultas... Que la información se vea en el mapa a partir del despliegue y consulta utilizando PANDAS, Agregar los modulos al Frontend de la pestaña del mapa. Por extra, mostrar los botones de jornada, vehiculo y mapa mas grandes, mejorar la dinamica visual de la pagina"
+   - "El modulo de consultas unicamente para el MAPA, los comandos de voz por ahora sera solo para captura de registros"
+   - "En la ventana de MAPA hay que actualizar diseño de HTML y CSS, quiero se abra una ventana emergente para las consultas, o en su defecto disponer parte de la pantalla para el MAPA y otra para recibir el input del usuario." [with screenshot showing old UI still showing]
+   - "No se actualizan los cambios en la WEB. En la ventana del mapa, quiero se abra una ventana emergente para las consultas..." [screenshot of y4ga.app and y4ga.app/yaga/]
+   - "Agregar opciones para el PERFIL de conductor, poder mostrar su nombre, algun ID, poder subir una fotografia, ademas de crear la opcion de mostrar un avatar del vehiculo acorde al color seleccionado"
+   - "Perfecto, ya visualice los cambios. Ahora bien, el boton de consultas no despliega nada" (user confirmed profile changes visible, but Consultas button broken)
+
+7. Pending Tasks:
+   - **Fix "Consultas" button** — the sliding panel CSS is broken (panel doesn't appear when button clicked). Fix in progress: change `.mapa-panel` from `left: -340px` transition to `transform: translateX(-110%)`, add `overflow: hidden` to `.mapa-wrap` (not `#screen-mapa`). Only the first part (removing overflow from #screen-mapa) was deployed.
+   - Deploy the complete CSS fix to EC2
+
+8. Current Work:
+   Just before the summary request, two tasks were in flight simultaneously:
+   
+   1. **Conductor profile deployment** (completed): Added conductor-card HTML, CSS (`cc-photo-wrap`, `cc-photo`, `cc-initials`, `cc-photo-btn`, `cc-info`, `cc-name`, `cc-id`, etc.), JS functions (`colorNameToHex`, `darkenHex`, `carAvatarSVG`, `subirFotoConductor`, `renderFotoConductor`, `initPerfilConductor`), and vehicle avatar SVG in `perfil-identity`. Deployed to `/var/www/yaga/yaga/index.html`.
+   
+   2. **Consultas button CSS fix** (partially applied): User reported the panel doesn't open. The issue is `overflow: hidden` on `#screen-mapa` clipping the panel at `left: -340px`. One edit was applied:
+   ```css
+   /* BEFORE */
+   #screen-mapa { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+   /* AFTER */
+   #screen-mapa { flex: 1; display: none; flex-direction: column; }
+   ```
+   The remaining fix (change panel to `transform: translateX` + add `overflow: hidden` to `.mapa-wrap`) was NOT yet written when the summary was triggered.
+
+9. Optional Next Step:
+   Complete the CSS fix for the "Consultas" panel. The user's most recent message was: "Perfecto, ya visualice los cambios. Ahora bien, el boton de consultas no despliega nada."
+   
+   The fix requires:
+   1. Change `.mapa-panel` CSS from `left: -340px` / `.open { left: 0 }` to `transform: translateX(-110%)` / `.open { transform: translateX(0) }`
+   2. Add `overflow: hidden` to `.mapa-wrap` CSS so the panel is clipped when off-screen but visible when slid in
+   3. Deploy to `/var/www/yaga/yaga/index.html`
+   
+   The partial fix already deployed only removed `overflow: hidden` from `#screen-mapa`. The transform-based approach still needs to be written and deployed.
+</summary>

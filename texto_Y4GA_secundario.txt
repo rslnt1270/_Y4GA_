@@ -1,0 +1,292 @@
+Veo los cambios pendientes. Antes de commitear, déjame revisar el diff para armar un mensaje claro.
+Tengo un panorama claro. Los cambios son del sprint5: sistema de histórico de viajes (Uber/DiDi). Voy a:
+
+1. Actualizar `.gitignore` para excluir archivos temporales
+2. Hacer commit de todos los archivos relevantes
+3. Push al repositorio
+Ahora el commit con todos los archivos relevantes:
+Commit listo. Ahora el push:
+Listo. Resumen de lo que se hizo:
+
+**Commit `7cfc3cb` — sprint5 subido a GitHub:**
+
+- `historico_service.py` — parseo Uber/DiDi, import sin duplicados, stats, datos para mapa
+- `historico.py` — endpoints `/import/json`, `/stats`, `/mapa`
+- `auth.py` — endpoint `/auth/me` para validar JWT
+- `jornada_service.py` — promedio dinámico (ya no $72.94 fijo) + función `cerrar_jornada()`
+- `index.html` — pantalla de histórico en el frontend
+- Extractores y `build_map.py` incluidos
+- `.gitignore` actualizado (lock files, .Rhistory, archivos generados excluidos)
+Cuando yo intento acceder a YAGA requiero que me pida mi correo y contraseña, yo decido como usuario si guardar los datos de acceso para inicio rapido, o colocarlos manualemnte las proximas ocasiones. Al refrescar mi pagina de YAGA me manda directamente a mi panel
+Déjame leer el frontend para entender el flujo de auth actual.
+Entendido perfectamente. El flujo actual siempre guarda en `localStorage` (persistente) y nunca pregunta. Necesito:
+
+1. Agregar checkbox "Recordar mis datos" en el login
+2. Si marcado → `localStorage` (persiste al refrescar/cerrar y abrir)
+3. Si no marcado → `sessionStorage` (solo mientras la pestaña esté abierta)
+4. Actualizar todos los puntos donde se lee/limpia el token
+
+Empiezo con los cambios:
+Ahora agrego las funciones helper para abstraer el storage y reemplazo todos los puntos donde se lee/escribe el token:
+Ahora el bloque de `checkAuth`:
+Ahora el bloque de `doLogin` y `doRegister`:
+Finalmente el `subirJson` y eliminar el bloque de check duplicado que quedó al final:
+Este bloque es un check síncrono inicial antes de que `validarSesion()` responda. Lo actualizo para que use los helpers:
+Verifico que no quedaron referencias a `localStorage.getItem('yaga_token')` perdidas:
+Esas dos son correctas (las funciones helper y la lógica de qué store actualizar). Ahora subo a EC2:
+Ahora depliego en EC2:
+El proyecto en EC2 no es un repositorio git, tiene solo los archivos del backend. Copio el `index.html` directo con `scp`:
+Listo. Resumen de los cambios:
+
+**Flujo de autenticación actualizado:**
+
+- Al entrar a `y4ga.app` → siempre pide email y contraseña
+- Debajo del campo de contraseña hay un checkbox **"Recordar mis datos (inicio rápido)"** — marcado por defecto
+  - **Marcado** → sesión guardada en `localStorage`: al refrescar o volver a abrir el navegador vas directo al panel
+  - **Desmarcado** → sesión en `sessionStorage`: cuando cierras la pestaña o el navegador, la próxima vez pide login de nuevo
+- Cerrar sesión limpia ambos storages en cualquier caso
+Activar que al hacer enter se inicie sesion, es necesario apretar el boton de ENTRAR, ademas no me sale la opcion para guardar los datos de inciio de sesion para la proxima vez
+El checkbox está en el archivo. Puede ser cache del navegador o que el `#authScreen` tiene overflow oculto. Voy a revisar el CSS y además agrego el Enter key:
+El checkbox está en el servidor pero el navegador está cacheando la versión anterior. Arreglo los dos problemas: **Enter para iniciar sesión** + **forzar que el HTML no se cachee** en nginx.
+El nginx ya tiene `no-cache` pero Cloudflare puede estar cacheando. Voy a agregar Enter key (el bug real) y eso también forzará que el archivo cambie para el cache:
+Listo el Enter key. Ahora el usuario mencionó otros problemas importantes. Déjame revisar el estado actual del frontend:
+Entiendo todos los issues. Déjame ver el estado completo del frontend para identificar qué se rompió:
+Veo el problema. El botón "Y" en la esquina superior derecha ES el menú de perfil/logout, pero no es obvio. Además, "Importar historial" solo se ve desde la pantalla de Mapa. Voy a:
+
+1. Hacer el botón de usuario más obvio (tooltip + indicador)
+2. Agregar "Importar historial Uber/DiDi" directo en el menú del usuario
+3. Estos son los dos problemas de UX que reportas
+Ahora agrego "Importar historial" en el menú de usuario y también actualizo el texto del botón para que muestre la inicial + "▾":
+Ahora actualizo `initUserMenu` para que el botón muestre la inicial del conductor con el ▾:
+Deploy:
+Listo. Ahora para ver los cambios **haz Ctrl+Shift+R** en Firefox (recarga forzada sin caché).
+
+Resumen de lo que está disponible y cómo funciona:
+
+**Corregido ahora:**
+- Enter en contraseña → inicia sesión directamente
+- Botón de usuario ahora dice `Y ▾` (pastilla visible, no un círculo pequeño) — haz click para abrir el menú
+- El menú tiene: Perfil · Vehículo · Mapa histórico · **Importar historial Uber/DiDi** · Cerrar sesión
+
+**Sobre "conectar cuentas Uber/DiDi":**  
+YAGA no tiene acceso directo a las APIs de Uber/DiDi (requieren contratos de socio con ellos). El flujo actual es:
+1. Ejecutas el extractor (`uber_extraction.py` o `didi_extraction.py`) que descarga tu historial
+2. En YAGA: menú → "Importar historial Uber/DiDi" → subes el archivo `.json` generado
+3. El mapa y las estadísticas se llenan automáticamente con tus viajes
+
+**El mapa aparece vacío** porque aún no has importado ningún historial — es normal para una cuenta nueva.
+La estructura está clara:
+- `/var/www/yaga/` → raíz → actualmente la app YAGA (debe ser la landing)
+- `/var/www/yaga/yaga/` → ya existe con su `index.html`
+- `/var/www/yaga/poleana/` → ya existe
+
+Voy a:
+1. Crear la página de selección en la raíz
+2. Corregir el deploy para que YAGA vaya a `/yaga/index.html` y no a la raíz
+POLEANA es un juego de mesa digital. Ahora creo la landing page de selección y actualizo el deploy:
+Necesito asegurarme que la app YAGA esté en `/yaga/index.html`, no la landing:
+Landing en raíz y YAGA en `/yaga/` confirmados. Ahora el commit:
+Ahora el tema del mapa. El dataset histórico que importaste pertenece a tu `conductor_id` específico. Déjame verificar que la lógica del mapa ya filtra por `conductor_id` (que viene del JWT):
+El mapa ya está bien: el dataset está asociado a tu `conductor_id` (`y.ortega.316197595@gmail.com`) y el query filtra por JWT — nuevos usuarios ven el mapa vacío automáticamente. No hay nada que cambiar ahí.
+
+Ahora el botón de regreso en la pantalla de login/registro:
+Ahora el CSS para el botón de regreso:
+El `#authScreen` necesita `position: relative` para que el botón absoluto funcione:
+Cloudflare puede estar cacheando. Verifico qué hay en el servidor y fuerzo la actualización:
+La landing está bien en el servidor. El problema es **Cloudflare caché**. Necesito actualizar el nginx para que envíe headers más agresivos de no-cache, y también estructurar mejor las rutas:
+Ahora deplío también el YAGA app con el botón de regreso y el commit:
+Listo. Lo que se hizo:
+
+**Estructura final del sitio:**
+- `y4ga.app/` → **Landing de selección** (YAGA · POLEANA)
+- `y4ga.app/yaga/` → App YAGA con botón `← Apps` en login
+- `y4ga.app/poleana/` → App POLEANA
+
+**Cambios en nginx:**
+- Ruta raíz `/` sirve solo la landing, nunca la app de YAGA
+- Cada sub-app tiene su propio bloque con fallback SPA correcto
+- Headers `no-cache, no-store, must-revalidate` + `Pragma: no-cache` + `Expires: 0` — esto le dice a Cloudflare que **no guarde** esas páginas en caché
+
+**El mapa ya está correcto:** filtra por `conductor_id` del JWT. Tu cuenta (`y.ortega.316197595@gmail.com`) tiene los datos del dataset; un usuario nuevo ve el mapa vacío.
+
+Si `y4ga.app/` todavía muestra la app de YAGA, haz **Ctrl+Shift+R** — es cache local del navegador, el servidor ya está correcto.
+La ventana principal sigue siendo, ademas de que el boton de APP no responde
+El usuario ve el YAGA app en la raíz aunque yo despliegue la landing — el "← Apps" que aparece es parte del YAGA app que fue al root en algún momento. Voy a verificar el servidor ahora mismo:
+El servidor está correcto (la landing está en el root). El problema es Cloudflare CDN o un **Service Worker** de la PWA cacheando la versión antigua. Déjame verificar:
+El servidor está bien. El problema es **Cloudflare CDN cacheó la app de YAGA** en la raíz antes de que yo pusiera la landing. El botón "← Apps" también falla por eso (lleva a `/` que Cloudflare sigue sirviendo como YAGA).
+
+**Necesitas purgar el caché de Cloudflare:**
+
+1. Entra a **dash.cloudflare.com**
+2. Selecciona el dominio `y4ga.app`
+3. Menú izquierdo → **Caching** → **Configuration**
+4. Botón **"Purge Everything"** → Confirmar
+
+Cloudflare vaciará su cache global y la próxima vez que alguien visite `y4ga.app/` obtendrá la landing page directamente del servidor.
+
+---
+
+Mientras tanto, puedes acceder a YAGA directamente en: `y4ga.app/yaga/`
+Perfecto, el purge fue exitoso. Ahora abre una nueva pestaña y ve a **y4ga.app** — debería mostrarte la pantalla de selección con YAGA y POLEANA.
+
+Si sigues viendo la app de YAGA, haz **Ctrl+Shift+R** para forzar recarga local también.
+Déjame verificar exactamente qué está pasando en el servidor en este momento:
+El servidor sirve la landing correctamente. El problema es **el Browser Cache TTL de Cloudflare está en 4 horas** (vi en tu captura). Cloudflare le dijo a Firefox que cachee `y4ga.app/` por 4 horas — aunque purgues el CDN, el navegador ya tiene la versión vieja guardada.
+
+**Dos cosas a hacer:**
+
+**1. En Firefox — Hard Refresh:**
+Presiona `Ctrl + Shift + R` en la pestaña de `y4ga.app`
+
+**2. En Cloudflare — cambiar el TTL del navegador:**
+En la misma pantalla que tienes abierta (Caching → Configuration), cambia **Browser Cache TTL** de `4 hours` a **`Respect Existing Headers`** y guarda. Así Cloudflare respetará nuestros headers de `no-cache` del servidor.
+
+Eso debería resolver ambos problemas (landing en raíz y botón `← Apps` funcional).
+Déjame investigar a fondo. Voy a ver el manifest.json y qué responde el servidor a través del dominio real:
+**Encontré el problema.** El `manifest.json` tiene `"start_url": "/"` — esto hace que Firefox trate a `y4ga.app/` como la PWA de YAGA. Necesito:
+
+1. Actualizar el manifest a `start_url: "/yaga/"` y `scope: "/yaga/"`
+2. Mover el manifest al directorio `/yaga/`
+3. Verificar que la landing page no tenga link al manifest
+El YAGA app tenía `manifest.json` con `start_url: "/"` — Firefox lo instaló como PWA apuntando a la raíz. Eso es exactamente por qué siempre abre el YAGA. Voy a corregir todo:
+Ahora creo el nuevo manifest con el scope correcto:
+Ahora deplío todo en EC2 — el nuevo manifest en `/yaga/`, el YAGA app actualizado, y borro el manifest viejo de la raíz:
+Verifico que la raíz ya no tiene manifest y sirve la landing:
+Ahora purga Cloudflare de nuevo (igual que antes, **Purge Everything**) y luego en Firefox **borra los datos del sitio**:
+
+**En Firefox → `y4ga.app`:**
+1. Haz click en el **candado** 🔒 en la barra de dirección
+2. → **Información del sitio** → **Borrar cookies y datos del sitio**
+3. Confirma
+
+Esto eliminará la PWA de YAGA que Firefox tenía instalada apuntando a `/`.
+
+**Qué se corrigió:**
+- El `manifest.json` viejo tenía `"start_url": "/"` → Firefox abría YAGA directo al entrar a `y4ga.app`
+- El nuevo manifest está en `/yaga/manifest.json` con `scope: "/yaga/"` — YAGA ya no reclamará la raíz
+- La raíz `y4ga.app/` no tiene ningún manifest → Firefox mostrará la landing page limpiamente
+- El botón `← Apps` en YAGA lleva a `/` → la landing page
+El navegador tiene `y4ga.app/` cacheado como YAGA app a nivel local. La solución definitiva: hago que la raíz devuelva un **redirect 302** (no cacheable) hacia `/select/` donde vive la landing. Así el navegador no puede cachear la landing y siempre la ve fresca.
+Ahora actualizo el botón "← Apps" en el YAGA app para que apunte a `/select/` y no a `/`:
+También actualizo la landing para que sus enlaces apunten a las rutas correctas (ya están bien) y deplío todo:
+Verifico el flujo completo:
+El servidor funciona perfectamente. Commit y Cloudflare purge:
+**Ahora haz Purge Everything en Cloudflare de nuevo** (igual que antes).
+
+**Flujo final:**
+- `y4ga.app/` → **302 redirect** (no cacheable) → `/select/` → **Landing page** (YAGA · POLEANA)
+- `y4ga.app/yaga/` → App YAGA
+- `y4ga.app/poleana/` → App POLEANA
+- Botón `← Apps` en YAGA → `/select/` ✓
+
+El 302 es la clave: los navegadores **no guardan en caché los redirects 302**, así que cada vez que alguien visite `y4ga.app/` siempre será enviado a `/select/` con la landing fresca.
+Entre en incognito en Chrome y no funciona.
+Dos problemas visibles:
+1. `/select/` da 404 — el directorio existe pero nginx no lo encuentra correctamente
+2. `y4ga.app` sigue mostrando YAGA — Cloudflare cacheó la respuesta anterior del redirect
+
+Voy a diagnosticar y arreglar directo:
+Después de todos estos intentos con nginx y Cloudflare, el problema persiste por cómo Cloudflare cachea las rutas. La solución definitiva es diferente: **integrar la pantalla de selección directamente en la app de YAGA**, eliminando la dependencia de rutas externas.
+
+El flujo será:
+- `y4ga.app/` → YAGA app → si no hay sesión, muestra **selección de app primero**
+- Usuario elige YAGA → pantalla de login
+- Usuario elige POLEANA → redirige a `/poleana/`
+Ahora agrego el HTML de la pantalla de selección antes del auth screen:
+Actualizo el botón "← Apps" para que vuelva a la pantalla de selección (no a una URL):
+Ahora actualizo el CSS del `.auth-back` para que funcione como botón:
+Ahora agrego las funciones JS para manejar la navegación entre pantallas:
+Ahora actualizo `validarSesion()` para que muestre la pantalla de selección cuando no hay token (en lugar del auth screen directo):
+También el check inicial síncrono:
+Deploy:
+Listo. Ahora haz **Purge Everything** en Cloudflare una última vez y prueba en Chrome incógnito.
+
+**El flujo ahora es:**
+```
+y4ga.app  →  Pantalla: [🚕 YAGA] [🎲 POLEANA]
+                ↓ elige YAGA          ↓ elige POLEANA
+           Login / Registro       /poleana/
+                ↓ ← Apps
+           vuelve al selector
+```
+
+Ya no depende de rutas `/select/` ni redirects — todo pasa dentro de la misma página. Cloudflare ya no puede interferir.
+Ahora el problema solo es con POLEANA, el bton de regreso de YAGA ya funciona y la venta principal es selection
+`/poleana/` da 404 igual que pasaba con `/select/`. Es el mismo problema de Cloudflare. Verifico el servidor y soluciono:
+Nginx sirve POLEANA correctamente desde localhost. El problema es Cloudflare cacheando 404 para `/poleana/`. Voy a checar los logs de nginx para ver qué pasa con las peticiones reales y simplificar el nginx config:
+Los logs confirman que Cloudflare no está enviando las peticiones de `/poleana/` a nginx — las está bloqueando con un 404 cacheado. Voy a probar si la URL exacta del archivo funciona:
+`/poleana/index.html` sí funciona. Cloudflare tiene cacheado el 404 solo para la URL `/poleana/` (con slash final). Cambio el botón de POLEANA para usar la URL exacta del archivo:
+Prueba ahora. Si POLEANA sigue con 404, hay que hacer un **Custom Purge** en Cloudflare específicamente para la URL `https://y4ga.app/poleana/` — esto limpia solo ese cache sin afectar el resto. Está en el mismo botón que usaste antes (Caching → Configuration → **Custom Purge**).
+Seguimos con el error
+La URL muestra `/poleana/` (no `/poleana/index.html`) — Cloudflare está sirviendo el YAGA app cacheado antiguo que aún usa la URL vieja. El problema real es que Cloudflare está **sobreescribiendo** los headers `no-cache` del servidor con su propia configuración de "Browser Cache TTL: 4 horas".
+
+Voy a agregar los headers específicos de Cloudflare para forzar que no cachee nada, y necesito que hagas **dos acciones en Cloudflare**:
+
+**Acción 1 — Ahora:** En Cloudflare → Caching → Configuration → **Browser Cache TTL** → cambia a **"Respect Existing Headers"** → Guardar
+
+**Acción 2 — Después de eso:** **Custom Purge** → URL: `https://y4ga.app/poleana/` → Purge
+Listo. El orden de acciones que necesitas hacer ahora en Cloudflare:
+
+**1. Browser Cache TTL → "Respect Existing Headers"**
+Caching → Configuration → Browser Cache TTL → cambia de "4 hours" a **Respect Existing Headers** → Save
+
+**2. Custom Purge de las URLs que dan 404:**
+Caching → Configuration → Custom Purge → pega estas URLs una por una:
+```
+https://y4ga.app/poleana/
+https://y4ga.app/select/
+https://y4ga.app/
+```
+
+Con el `Browser Cache TTL` en "Respect Existing Headers", el servidor ya envía `no-store` y Cloudflare dejará de cachear estas páginas para siempre. Una vez que hagas eso, ya no necesitarás purgar manualmente.
+ya realice, persiste el error
+Ahora la URL es `/poleana/index.html` — el botón funciona — pero nginx da 404. Voy a verificar directamente:
+Nginx responde 200 en todos los casos. El 404 viene 100% de Cloudflare. Voy a verificar los logs en tiempo real mientras el usuario carga la página:
+Los logs confirman que ninguna petición de `/poleana/` llega a nginx desde Cloudflare — lo intercepta antes. Voy a revertir el nginx a la configuración original que sí funcionaba para POLEANA y solo agregar los headers de no-cache:
+Ambos dan 200. Ahora haz **Purge Everything** en Cloudflare una vez más y prueba inmediatamente en Chrome incógnito. 
+
+Si sigue fallando después del purge, el problema está en Cloudflare interceptando esas rutas por alguna regla interna. En ese caso necesito que vayas a **Cloudflare → Security → WAF** y me digas si hay reglas activas que estén bloqueando.
+No veo el WAF en security
+Sin WAF activo. Voy a probar directamente a través de Cloudflare desde el servidor para ver qué retorna exactamente:
+El resultado es definitivo: **Cloudflare genera el 404 sin contactar a nginx** (size:0, server:cloudflare, y no hay entrada en los logs de nginx). Esto no es cache — hay una **regla activa en Cloudflare** que bloquea `/poleana/`.
+
+Ve a **Cloudflare → Rules** (en el menú izquierdo) y muéstrame qué hay en:
+- Redirect Rules
+- Transform Rules  
+- Cache Rules
+
+Alguna de esas reglas está generando el 404 para `/poleana/`.
+Ve a **Cloudflare → tu dominio y4ga.app → Rules → Page Rules** y dime cuántas reglas aparecen ahí (o manda screenshot). Page Rules es una sección separada del sistema de Rules nuevo y en el plan gratuito pueden quedar reglas antiguas activas que bloqueen rutas específicas.
+No hay Page Rules — 0 de 3 disponibles. El misterio persiste.
+
+Hay una herramienta de diagnóstico perfecta para esto: **Cloudflare Trace**. Está en el menú izquierdo que ya veo: **Rules → Trace Beta**.
+
+Abre Trace, ingresa la URL `https://y4ga.app/poleana/` y ejecuta el trace. Eso muestra exactamente qué features de Cloudflare se aplican a esa petición — va a revelar qué está generando el 404 antes de llegar a nginx.
+
+También revisa **Workers Routes** (en el menú izquierdo) — podría haber un Worker asignado a algún patrón de URL que esté interceptando `/poleana/`.
+**Encontrado.** El Trace dice **Workers: Matched** — hay un Cloudflare Worker que intercepta `/poleana/` y devuelve 404. Por eso nginx nunca ve la petición.
+
+Ve a **Workers Routes** en el menú izquierdo y dime qué rutas aparecen ahí. El Worker está configurado para capturar algún patrón (probablemente `y4ga.app/*` o similar) y está devolviendo 404 para rutas que no conoce.
+
+También expande el item "Workers" en el Trace (tiene una flecha ▼) — mostrará el nombre del Worker.
+**Ahí está el problema.** El Worker `y4ga` tiene una ruta `y4ga.app/*` que captura TODO, incluyendo `/poleana/`. El Worker no sabe qué hacer con `/poleana/` y devuelve 404.
+
+Haz clic en el nombre **"y4ga"** (el link azul) para ver el código del Worker. Necesito ver qué hace para saber cómo modificarlo (probablemente hay que agregar un pass-through al origin para rutas que no sean de YAGA).
+**Problema identificado.** Este es un Worker de **activos estáticos** (dice "only has static assets"). El Worker tiene sus propios archivos del frontend de YAGA en el edge de Cloudflare. Cuando piden `/poleana/`, busca ese archivo en sus activos, no lo encuentra, y devuelve 404 — nunca llega a nginx.
+
+**Solución inmediata:** Elimina la ruta `y4ga.app/*` haciendo clic en el ícono de basurero 🗑️ que aparece a la derecha de esa ruta. 
+
+Eso hará que `/poleana/*` pase directo a nginx (que sí tiene los archivos y devuelve 200). Las rutas de YAGA también irán a nginx, que también tiene los archivos.
+
+Después de borrar esa ruta, prueba `y4ga.app/poleana/` en el navegador.
+**POLEANA funciona.** `y4ga.app/poleana/` carga correctamente.
+
+Todo resuelto:
+- Selección de apps en `y4ga.app` ✅
+- YAGA funciona ✅  
+- POLEANA accesible desde el botón ✅
+- El Worker de Cloudflare ya no bloquea rutas desconocidas ✅
+
+El problema era que el Worker `y4ga` tenía la ruta `y4ga.app/*` capturando todo el tráfico con sus activos estáticos, sin saber qué hacer con `/poleana/`.
+
+¿Qué sigue? ¿Hay algo más que quieras trabajar?

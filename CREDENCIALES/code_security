@@ -1,0 +1,38 @@
+# ==============================================================================
+# PROPIEDAD INTELECTUAL DE YAGA
+# Licencia: Propietaria y Confidencial. 
+# Queda estrictamente prohibida la copia, distribución o modificación no autorizada.
+# Módulo: Core Security - Financial Token Vault
+# ==============================================================================
+
+import os
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+class VaultManager:
+    """
+    Gestor de encriptación AES-256-GCM para datos patrimoniales y tokens de acceso.
+    Alineado con LFPDPPP (Privacidad por Diseño) para el almacenamiento seguro.
+    """
+    def __init__(self):
+        # La llave maestra debe ser inyectada vía Secrets en Kubernetes, nunca hardcodeada.
+        key_hex = os.environ.get("YAGA_MASTER_AES_KEY")
+        if not key_hex or len(key_hex) != 64:
+            raise ValueError("Configuración insegura: Llave AES-256 inválida o ausente.")
+        self.aesgcm = AESGCM(bytes.fromhex(key_hex))
+
+    def encrypt_sensitive_data(self, data: str) -> bytes:
+        """Encripta tokens de APIs de terceros (ej. Uber) o CLABEs."""
+        nonce = os.urandom(12) # Nonce criptográficamente seguro
+        ciphertext = self.aesgcm.encrypt(nonce, data.encode('utf-8'), None)
+        return nonce + ciphertext
+
+    def decrypt_sensitive_data(self, encrypted_payload: bytes) -> str:
+        """Desencripta la información en memoria para su uso inmediato (Jamás persistir en logs)."""
+        nonce = encrypted_payload[:12]
+        ciphertext = encrypted_payload[12:]
+        decrypted_data = self.aesgcm.decrypt(nonce, ciphertext, None)
+        return decrypted_data.decode('utf-8')
+
+# Ejemplo de uso en el pipeline de la API:
+# vault = VaultManager()
+# token_seguro = vault.encrypt_sensitive_data("uber_access_token_xyz")

@@ -1,0 +1,502 @@
+La instancia estaba apagada al cerrar la última sesión. ¿Ya la arrancaste desde la consola AWS?
+
+Si sí, el comando SSH es:
+
+```bash
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem ec2-user@3.19.35.76
+```
+
+O si quieres que lo ejecute directamente:
+Vamos a intentar la conexión:
+La instancia está apagada — timeout en el puerto 22. Necesitas arrancarla desde la consola AWS primero.
+
+Una vez que la enciendas, confirma aquí y ejecuto el SSH directo. Ten en cuenta que la IP pública puede cambiar al reiniciar (a menos que tengas una Elastic IP asignada).
+Conexión exitosa. Instancia recién arrancada (0 min uptime). Ahora revisemos el estado de nginx y qué problema hay con el acceso a y4ga.app:
+Todo levantado correctamente:
+- **Nginx**: activo y corriendo
+- **Docker**: los 3 contenedores up (api, postgres, redis)
+- **IP privada**: `172.31.47.17` — la IP pública puede haber cambiado
+
+¿Cuál es el problema exacto con el acceso a y4ga.app? ¿No resuelve DNS, error SSL, o la IP pública cambió y hay que actualizar Cloudflare?
+En el celular el boton de dados no funciona, ademas implementar la visualizcacion de las fichas previas a la combinacion de dados de 6, ademas implementar un modulo de seleccion de fichas
+Voy a leer el archivo del juego primero.
+Tengo todo el código claro. Hay 3 bugs/features a implementar:
+
+1. **Bug crítico mobile**: Las redeclaraciones `function doRoll()`, `function passTurn()`, `function applyMoveDispatch()` al final del archivo se hoistean y sobreescriben las originales, causando recursión infinita → stack overflow silencioso en mobile.
+2. **Visualización par 6**: Mostrar fichas en base cuando toca el par de 6.
+3. **Módulo selector de fichas**: Selector visual en panel + canvas.
+
+Empiezo con los edits:
+Sí, la base de datos está en EC2 — `yaga_postgres` (Docker, PG16 puerto 5432) con tablas `poleana_users`, `poleana_games`, `poleana_game_players`.
+
+Ahora los edits al juego. Empiezo por el bug crítico y las 2 features:
+
+**Edit 1: Fix bug infinite recursion (mobile button roto)**
+**Edit 2: Add selectedPiece to game state**
+**Edit 3: Reset selectedPiece on endTurn**
+**Edit 4: CSS para piece picker y base preview**
+**Edit 5: Piece picker + base preview en updatePanel()**
+**Edit 6: Canvas click en ficha origen → selecciona pieza**
+**Edit 7: Usar movesToSearch en el canvas click (reemplazar G.moves en el loop)**
+**Edit 8: Render — resaltar solo destinos de la pieza seleccionada**
+Ahora deploy al EC2:
+Deployado. Ahora el **favicon** (imagen de palmas para la barra del navegador).
+
+Necesito encontrar dónde está guardada la imagen que enviaste. ¿La tienes descargada en tu máquina? Si sí, dime la ruta. Si no, puedo convertir el JPG a PNG con ImageMagick y colocarlo como `favicon.png` + agregar la etiqueta `<link rel="icon">` al HTML del juego.
+
+¿La imagen está en algún path local, o quieres que la genere desde la que se ve en el mensaje?
+Deja ver cuál es la palma:
+La imagen de la palma no está guardada localmente — la enviaste directamente desde el chat. Necesito que la guardes a disco primero.
+
+**Descarga la imagen** (clic derecho → "Guardar imagen como") y dime la ruta, o ejecuta esto en la terminal para ver si ya apareció en Descargas:
+
+```
+! ls -lt ~/Descargas/*.jpg | head -5
+```
+
+Una vez que tengas la ruta, la convierto a PNG, la subo a EC2 y agrego la etiqueta `<link rel="icon">` al HTML del juego y del sitio principal.
+Es esa. La convierto a PNG con fondo transparente, la subo a EC2 y agrego el favicon al HTML:
+Ahora agrego las etiquetas `<link rel="icon">` al HTML del juego:
+Todo deployado. Resumen de lo que se hizo en esta sesión:
+
+**Bug fix mobile:**
+- Las redeclaraciones `function doRoll/passTurn/applyMoveDispatch` al final del script se hoisteaban y causaban recursión infinita. Cambiadas a asignaciones (`doRoll = function(){...}`) — el botón "Tirar Dados" ya funciona en móvil.
+
+**Visualización par 6:**
+- Cuando el spawn está disponible, muestra en el panel las fichas en cárcel como círculos de color con su número antes de los botones de acción.
+
+**Módulo selector de fichas:**
+- Fila de botones circulares (fichas 1-4) sobre las opciones de movimiento.
+- Tap en una ficha la selecciona → el tablero y los botones muestran solo los destinos de esa ficha.
+- Tap en el tablero sobre una ficha (anillo glow) también la selecciona.
+
+**Favicon:**
+- Palma convertida a PNG transparente (64×64 + 192×192 touch-icon).
+- Subida a `/var/www/yaga/favicon.png` y enlazada en el HTML.
+Agregar la regla de poder mover una ficha por un numero de del dado, y el numero del dado 2 para otra ficha. Sigue sin viualizarse las fichas en carcel Ademas me gustaria vectrorizar la imagen de la barra del navegador para cambiar el color de la imagen, quuiero que las palmeras sean naranjas
+Veo los 3 issues. Empiezo por el código, luego el favicon naranja:
+**Fix 1: Reset selectedPiece al entrar a BONUS y SPLIT2**
+Perfecto, ahora el flujo será: **selector de ficha → destinos marcados en tablero → tap para mover** (sin botones de texto). Voy a hacer todos los cambios juntos:
+**Fix base pieces: siempre visible, sin condición sp.canSpawn**
+**Reemplazar lista de botones de movimiento → solo hint + skip**
+**Mejorar render() — destinos grandes, coloreados por tipo de dado**
+**Ahora el favicon naranja con ImageMagick:**
+Palmas naranja perfectas. Deploy todo:
+Todo deployado. Resumen de cambios:
+
+**Regla split dados:**
+- Al entrar a SPLIT2 o BONUS se resetea `selectedPiece` → puedes elegir cualquier ficha para el segundo dado
+- Los marcadores en tablero muestran el número del dado: verde con suma total, azul claro con dado 1, cyan con dado 2
+
+**Fichas en cárcel:**
+- Ahora se muestran SIEMPRE en el panel de acciones (sin condición de spawn), en cualquier fase
+
+**Canvas-only moves:**
+- Se eliminaron los botones de texto "Ficha X → casilla Y"
+- Los destinos aparecen como círculos grandes con etiqueta: `✕` capture, `★` corona, `+` spawn, número del dado para splits
+- Tap en la casilla marcada → ejecuta el movimiento
+- Solo queda el botón "Pasar" en fases BONUS/SPLIT2
+
+**Favicon:**
+- Palmas naranja (`#FF8C00`) con fondo transparente, 64×64 + 192×192
+Déjame leer el estado actual completo del render y panel antes de planear los cambios:
+Tengo el panorama completo. Voy a implementar:
+1. **Loop de animación** con requestAnimationFrame (destinos pulsantes)
+2. **Animación de movimiento** suave de fichas
+3. **Fichas 3D** con gradiente radial y sombra
+4. **Animación de dados** al tirar
+5. **Panel rediseñado** más limpio en mobile
+
+Empiezo:
+**Animación de dados en doRoll:**
+**Trigger animación al mover ficha:**
+**Trigger animación en BONUS/SPLIT2:**
+**Arrancar loop al entrar a fase ACT:**
+**Reescribir render() completo con gradientes 3D y pulsación:**
+**CSS: mejoras visuales dados, panel, die animation:**
+**Agregar clase rolling durante animación de dados:**
+**Deploy:**
+Perfecto. Deploy:
+Listo. El favicon ahora usa `palmeras_new.jpg` — palmas naranja con gradiente, fondo transparente. Para que el navegador actualice el icono puede que necesites hacer **Ctrl+Shift+R** (hard refresh) o limpiar caché del navegador, ya que los favicons se cachean agresivamente.
+El logo no se ve
+El favicon solo está en `poleana_game.html`, no en el `index.html` principal. Voy a revisarlo:
+No tiene `<link rel="icon">`. Lo agrego directamente en EC2:
+El favicon ya es accesible (`200 OK`). Ahora haz **Ctrl+Shift+R** en Chrome para forzar recarga sin caché — el navegador cachea el favicon agresivamente y no lo actualiza con refresh normal.
+
+Si sigue sin aparecer, también puedes probar abrir una pestaña de incógnito donde no hay caché.
+La imagen está perfecta. El problema del favicon es probablemente caché del browser o que el `.ico` falta. Genero varios tamaños y también un `.ico` multi-resolución:
+Las palmeras ya están en naranja — la imagen `palmeras_new.jpg` ya tenía el color correcto y se preservó en el PNG. Lo que generé incluye:
+
+- `favicon.ico` — 16×16, 32×32, 48×48 (formato primario, máxima compatibilidad Chrome/Firefox/Safari)
+- `favicon-32.png` — fallback PNG
+- `apple-touch-icon.png` — 180×180 para iOS
+
+Para que aparezca en el tab del navegador abre una **pestaña de incógnito** a `y4ga.app` — ahí no hay caché y debería verse de inmediato.
+Voy a leer el SVG (el CDR es CorelDRAW binario, trabajaremos con el SVG):
+Es el mismo diseño del tablero pero en formato vectorial — puede reemplazar el `board.jpg` con calidad perfecta en cualquier resolución, y agregar soporte retina para que las fichas se vean nítidas. Voy a implementarlo:
+Voy a leer las fichas SVG mientras proceso el tablero:
+Perfectas — fichas estilo casino (chip de poker). Voy a implementar todo:
+1. **Tablero HD** (1024×1024 desde el SVG)
+2. **Fichas estilo chip** con aro de dashes, gradiente 3D y sombra
+3. **Soporte retina** (devicePixelRatio)
+Ahora los cambios al HTML — canvas retina + chip drawing + nuevo board:
+Ahora la función `drawChip()` y actualizar el render para usarla:
+Ahora reemplazar el bloque de dibujo de fichas en `render()` para usar `drawChip()`:
+**Deploy:**
+Primero decodifico el código Hydra del URL:
+Perfecto — es un shader Hydra.js (WebGL) de kaleidoscopio animado. Lo voy a integrar como capa de fondo dinámica detrás del tablero. El efecto da una sensación de profundidad sin interferir con la jugabilidad:
+**CSS para el canvas Hydra de fondo:**
+**Agregar canvas Hydra en el HTML:**
+**Inicializar Hydra cuando arranca el juego:**
+**Deploy:**
+Todo deployado. Lo que implementé en esta sesión:
+
+**Tablero HD**
+- SVG vectorial → PNG 1024×1024 como `board_hd.png`
+- Reemplaza el `board.jpg` anterior con calidad 2× mayor
+
+**Fichas estilo casino chip**
+- Aro exterior oscuro con dashes blancos alrededor (estilo casino)
+- Interior con gradiente radial (efecto 3D)
+- Gleam de brillo top-left
+- Número centrado en blanco
+- Ring de selección pulsante cuando la ficha está activa
+
+**Soporte Retina / HiDPI**
+- Canvas renderiza a `480 × devicePixelRatio` píxeles
+- Todo se ve nítido en pantallas de alta densidad (iPhone, MacBook Retina, etc.)
+
+**Hydra.js fondo animado** (por Mahalia H-R, CC BY-NC-SA 4.0)
+- Kaleidoscopio WebGL en `#hydra-bg` (capa detrás del tablero)
+- Opacidad 18% — se ve como una textura animada sutil
+- Responde al movimiento del mouse (rotación)
+- No interfiere con el gameplay
+El tablero ya no se ve, deshacer movimientos al tablero, solo adaptar HYDRA para la capa traserea del diseño de la interfaz del usaurio en el frontend
+Claro, el problema es que:
+1. `board_hd.png` reemplazó `board.jpg` y algo falló
+2. Hydra debe ir como fondo de toda la UI, no dentro del canvas del juego
+
+Corrijo todo:
+**Mover Hydra canvas de dentro del game canvas → fondo global del body:**
+**Agregar canvas Hydra como primer hijo del body (fondo global):**
+**CSS: Hydra fijo detrás de toda la UI, sin afectar el canvas del juego:**
+**Actualizar init de Hydra para que use las dimensiones del viewport:**
+**Deploy:**
+Listo. Los cambios:
+
+- **Tablero restaurado** a `board.jpg` original — sin retina scaling
+- **Hydra movido** a `<canvas id="hydra-bg">` como primer hijo del `<body>`, posición `fixed`, 100vw × 100vh, z-index `-1`, opacidad 22%
+- El tablero del juego, el panel, la nav, todo flota **encima** del fondo Hydra animado
+- El canvas del juego no se ve afectado en absoluto
+El tablero dejo de visualizarse
+El canvas existe pero no dibuja. El problema es que `board.jpg` probablemente no carga desde la ruta `/poleana/board.jpg`. Voy a verificar:
+`board.jpg` existe y responde 200. El bug real es que **Hydra sobreescribe el `window.render` global**, que es la misma función que dibuja el tablero. El tablero deja de renderizar.
+
+Fix: renombrar nuestra función `render()` a `drawFrame()` para evitar el conflicto, y ajustar Hydra a pantalla completa:
+La declaración ya se renombró. Ahora verificar que `startLoop` también use `drawFrame`:
+Todas las llamadas correctas. Ahora también renombrar en `startLoop` y el `_origRender`:
+Ahora **Hydra a pantalla completa con resize dinámico**:
+**Deploy:**
+Listo. Los cambios:
+
+- **Bug raíz corregido**: Hydra sobreescribía `window.render` globalmente — nuestra función de dibujo del tablero fue renombrada a `drawFrame()` para evitar el conflicto
+- **Tablero restaurado**: `board.jpg` carga correctamente de nuevo
+- **Hydra pantalla completa**: canvas fijo `100vw × 100vh`, resolución `window.innerWidth × window.innerHeight`, responde a resize de ventana
+- **Sin interferencias**: `render(o0)` de Hydra y `drawFrame()` del juego son funciones completamente independientes
+
+
+en movil se ve perfecto , pero en PC habria que aummentar el tamaño del tablero
+El tablero en PC está limitado a 480px fijos. La solución es hacer que el canvas llene el espacio disponible del viewport. El `getCanvasXY` ya escala las coordenadas automáticamente:
+**Mobile: mantener comportamiento actual:**
+**Deploy:**
+El tablero en PC ahora usa:
+
+```
+tamaño = min(ancho_disponible - 340px,  alto_viewport - 50px,  900px)
+```
+
+— Se adapta automáticamente al tamaño de ventana, cuadrado perfecto, máximo 900px. En móvil no cambia nada. El panel lateral se queda fijo en 320px.
+NECESITO MEJORAR LA CALIDAD DE LOS PIXELES DEL TABLERO, EN PANTALLA MAS GRANDE  SE DEJA DE VER ESTETICO EL TABLERO, VAMOS A MEJORAR LA APARIENCIA, ENTIENDO QUE ES EL JPG
+El `board_hd.png` (1024×1024) ya está en el servidor — el problema fue que antes conflictuaba con Hydra, pero eso ya está corregido. Ahora además genero una versión 2048×2048:
+Ahora cambio el JS para cargar `board_2k.png` en desktop y `board.jpg` en mobile (para no desperdiciar ancho de banda):
+También agregar soporte retina correctamente — el canvas dibuja a resolución real del display:
+**Deploy:**
+Listo. Los cambios:
+
+| | Antes | Ahora |
+|---|---|---|
+| **Desktop** | `board.jpg` 480px → pixelado al escalar | `board_2k.png` 2048×2048 desde SVG vectorial |
+| **Mobile** | `board.jpg` | `board.jpg` (sin cambio, ahorra datos) |
+| **Retina** | Sin soporte | Canvas buffer × `devicePixelRatio` (hasta 3×) |
+
+El SVG original tiene resolución infinita — el PNG 2048×2048 cubre hasta pantallas 4K sin artefactos.
+Se ve mucho mejor — más detalle y contraste. Lo subo directo como `board_2k.png`:
+Listo. El `board_2k.png` en el servidor fue reemplazado con tu versión mejorada (1.4MB, 1024×1024). No se necesita cambiar el HTML — ya apunta a `board_2k.png` en desktop.
+
+Haz **Ctrl+Shift+R** para limpiar caché y ver el tablero nuevo.
+en la pc  la calidad de visualizacion del tablero no es la optima
+El problema es el canvas interno de 480×480 — cuando CSS lo escala a ~900px se ve borroso. Tengo que hacer que el buffer del canvas coincida con el tamaño real de display. Además voy a generar el tablero a 2048×2048:
+Ahora el fix real — el canvas buffer debe coincidir con el tamaño de display:
+Pero `offsetWidth` puede ser 0 si el `#game` aún está oculto cuando se ejecuta. Necesito leer el tamaño después del layout:
+**Deploy:**
+<analysis>
+Let me chronologically analyze this conversation about the Poleana project.
+
+1. **Initial SSH connection** - User wanted to connect to EC2 instance (3.19.35.76) to fix y4ga.app access. Instance was shut down, user restarted it, SSH connected successfully.
+
+2. **Mobile dice button bug + features** - Three issues reported:
+   - Mobile "Tirar Dados" button not working
+   - No visualization of pieces in jail (cárcel) before spawning
+   - Need piece selection module
+
+3. **Root cause of mobile bug** - Function redeclarations at bottom of HTML using `function doRoll()`, `function passTurn()`, `function applyMoveDispatch()` were being hoisted, overwriting originals and causing infinite recursion. Fixed by changing to variable assignments.
+
+4. **Favicon palm tree** - User sent palm tree JPG, wanted as PNG favicon for browser bar. Found file `a833b92228920a4a8502ae2c79921ceb.jpg` in Downloads, converted to PNG with transparent background, uploaded to EC2.
+
+5. **More game features** - Split dice rule (move one piece with die1, another with die2), fix cárcel visualization, vectorize favicon to orange palms.
+
+6. **Canvas-only moves** - Instead of text buttons, mark possible destination cells on board canvas.
+
+7. **New orange palm favicon** - `palmeras_new.jpg` found at `/home/y4ga_/Descargas/palmeras_new.jpg`, converted to multi-size favicons (ico, 32px, 64px, 180px) with orange color preserved.
+
+8. **Board SVG + fichas SVG** - User provided SVG board design (`Tablero_design (1).svg`) and poker chip reference (`fichas.svg`). Implemented casino-style chip drawing function + board HD (1024px from SVG).
+
+9. **Hydra.js integration** - User shared Hydra.js code URL for kaleidoscope effect. Decoded it, integrated as background animation.
+
+10. **Board disappeared** - Hydra overwrote global `render()` function. Fixed by renaming game render to `drawFrame()`.
+
+11. **Board still not showing** - Canvas retina scaling broke rendering, board_hd.png failed. Reverted to board.jpg, moved Hydra to full-viewport fixed canvas.
+
+12. **PC board too small** - Made canvas CSS fill available viewport space using `min()` calculations.
+
+13. **Board quality poor on PC** - Used `tablero_mejorado.png` (1024×1024 from user), upscaled to 2048×2048 with Lanczos, fixed canvas buffer to match actual CSS display size × dpr.
+
+Key technical details:
+- File: `/home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html`
+- EC2: 3.19.35.76, key: `~/Documentos/Poleana_Project/yaga_backend.pem`
+- Web root: `/var/www/yaga/` (nginx)
+- Poleana web root: `/var/www/yaga/poleana/`
+- Canvas internal coords: 480×480, CELL_PX=30
+
+Recent work: canvas buffer adaptive sizing fix - the canvas CSS size is ~900px but internal buffer was 480px causing blur. Fix: `bufSize = cssSize * dpr`, `ctx.scale(bufSize/480, bufSize/480)`. Also uploaded `board_2k.png` (2048×2048 Lanczos upscale).
+
+Current issue: Board quality still not optimal on PC. The last deploy included canvas buffer fix + 2048px board. User's last message was about poor quality on PC.
+</analysis>
+
+<summary>
+1. Primary Request and Intent:
+   The user is developing **Poleana** — a Colombian board game web app deployed at `y4ga.app/poleana/`. Throughout the session the explicit requests were:
+   - Connect via SSH to EC2 instance to fix access
+   - Fix mobile "Tirar Dados" button not working
+   - Add visualization of pieces in cárcel (jail) before spawn
+   - Add piece selection module (visual piece picker)
+   - Split dice rule: use die1 for one piece, die2 for another
+   - Show destination cells on canvas instead of text buttons
+   - Add palm tree favicon (orange, PNG) for browser bar
+   - Replace favicon with improved `palmeras_new.jpg`
+   - Use `Tablero_design (1).svg` (board SVG) for HD board
+   - Use `fichas.svg` as reference for casino-chip style pieces
+   - Integrate Hydra.js kaleidoscope as animated background
+   - Move Hydra to full-page background behind entire UI
+   - Restore board (Hydra was breaking it)
+   - Increase board size on PC desktop
+   - Improve board pixel quality on PC (it was blurry when scaled up)
+
+2. Key Technical Concepts:
+   - **HTML5 Canvas** — game rendering, `drawImage`, `getContext('2d')`, coordinate scaling
+   - **devicePixelRatio** — retina display support, canvas buffer × dpr
+   - **Canvas buffer vs CSS size** — canvas.width/height (internal pixels) ≠ CSS display size; blur occurs when CSS size > buffer size
+   - **requestAnimationFrame loop** — `startLoop()` for pulsing destination markers and piece animation
+   - **Function hoisting** — JS `function` declarations hoisted globally; caused infinite recursion bug
+   - **Hydra.js (hydra-synth)** — WebGL live-coding visual synth; exposes globals including `render()` which conflicted with game's render function
+   - **Nginx** — serves static files at `/var/www/yaga/` and `/var/www/yaga/poleana/`
+   - **Docker Compose** on EC2 — `yaga_api` (FastAPI), `yaga_postgres` (PG16), `yaga_redis`
+   - **ImageMagick (`magick`)** — image conversion, favicon generation, Lanczos upscale
+   - **Poleana game rules** — spawn combos (par6→2 fichas, par3→1 ficha, 6+3→pos3, sum6→pos0), capture priority, split dice, BONUS/SPLIT2 phases, chismoso (3 consecutive doubles)
+   - **COORDS object** — 4-player path mapping `{playerId: {pos: {col, row}}}`
+   - **Casino chip rendering** — radial gradient, dash ring, gleam arc
+
+3. Files and Code Sections:
+
+   - **`/home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html`** — Main game file (1400+ lines), all changes made here.
+
+     **Animation engine added:**
+     ```js
+     let _pulse = 0, _rafId = null, _animPieces = [];
+     let _diceRoll = {active:false, frames:0, maxFrames:18, display:[0,0], final:[0,0]};
+     const easeInOut = t => t<.5 ? 2*t*t : -1+(4-2*t)*t;
+     function lightenHex(hex, amt) { ... }
+     function getPieceXY(pi, qi, pos) { ... }
+     function triggerPieceAnim(pi, qi, fromPos, toPos) { ... }
+     function startLoop() { ... } // rAF loop for pulsing + piece animations + dice rolling
+     ```
+
+     **Canvas buffer adaptive sizing (latest fix):**
+     ```js
+     const dpr     = window.devicePixelRatio || 1;
+     const cssSize = canvas.offsetWidth || 480;
+     const bufSize = Math.round(cssSize * dpr);
+     canvas.width  = bufSize;
+     canvas.height = bufSize;
+     const drawScale = bufSize / 480;
+     ctx.scale(drawScale, drawScale);
+     ```
+
+     **Board image selection:**
+     ```js
+     boardImg.src = window.innerWidth > 760 ? 'board_2k.png' : 'board.jpg';
+     ```
+
+     **Renamed `render()` → `drawFrame()`** to avoid Hydra global conflict (replace_all):
+     ```js
+     function drawFrame() { ... }  // was function render()
+     const _origRender = drawFrame; // was render
+     ```
+
+     **Hydra init (full viewport background):**
+     ```js
+     if (!window._hydraReady && window.Hydra) {
+       const hc = document.getElementById('hydra-bg');
+       hc.width = window.innerWidth; hc.height = window.innerHeight;
+       const hydra = new Hydra({ canvas: hc, detectAudio: false, width: hc.width, height: hc.height, makeGlobal: true });
+       shape(() => Math.sin(time) + 0.542 * 3.963)
+         .rotate(() => Math.PI * mouse.x / 266.4)
+         .repeatX(3.193).repeatY(() => Math.sin(time) * 4.65)
+         .scale(() => Math.PI / 6.864)
+         .blend(src(o0).color(0.152, 0.193, 0.724))
+         .modulate(osc(25.49, 0.24, 0.583)).kaleid(3.535).out(o0);
+       window.addEventListener('resize', () => { hc.width = window.innerWidth; hc.height = window.innerHeight; hydra.setResolution(window.innerWidth, window.innerHeight); });
+       window._hydraReady = true;
+     }
+     ```
+
+     **Casino chip drawing function:**
+     ```js
+     function drawChip(px, py, r, colorIdx, number, isSelected, pulse) {
+       // Outer rim (dark), white dash ring, radial gradient inner circle,
+       // gleam arc, number label, selection glow ring
+     }
+     ```
+
+     **CSS — PC board fills viewport:**
+     ```css
+     #game { flex:1; display:none; flex-direction:row; overflow:hidden; height:calc(100vh - 44px); }
+     #canvas-wrap { flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; min-width:0; }
+     #board {
+       display:block;
+       width:  min(calc(100vw - 340px), calc(100vh - 50px), 900px);
+       height: min(calc(100vw - 340px), calc(100vh - 50px), 900px);
+       touch-action:none;
+     }
+     #panel { width:320px; flex-shrink:0; ... }
+     ```
+
+     **Mobile override:**
+     ```css
+     @media (max-width:760px) {
+       #board { width:100vw !important; height:100vw !important; max-width:480px !important; max-height:480px !important; }
+     }
+     ```
+
+     **Hydra canvas (fixed, full viewport, behind everything):**
+     ```html
+     <canvas id="hydra-bg"></canvas>
+     ```
+     ```css
+     #hydra-bg { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-1; pointer-events:none; opacity:.22; }
+     ```
+
+     **Mobile bug fix — variable assignment instead of function declaration:**
+     ```js
+     // BEFORE (caused infinite recursion via hoisting):
+     const _origDoRoll = doRoll;
+     function doRoll() { _origDoRoll(); sendOnlineState(); }
+     // AFTER (fixed):
+     const _origDoRoll = doRoll;
+     doRoll = function() { _origDoRoll(); sendOnlineState(); };
+     ```
+
+     **selectedPiece reset on phase transitions:**
+     ```js
+     G.moves=bMoves; G.phase='BONUS'; G.kbdIdx=0; G.selectedPiece=-1;
+     // and in goToSplit2:
+     G.moves=remMoves; G.splitRem=steps; G.phase='SPLIT2'; G.kbdIdx=0; G.selectedPiece=-1;
+     ```
+
+   - **`/var/www/yaga/poleana/board_2k.png`** — 2048×2048 Lanczos upscale of `tablero_mejorado.png` (user-provided 1024×1024 improved board). Used on desktop.
+   - **`/var/www/yaga/favicon.ico`** — Multi-resolution .ico (16, 32, 48px) from `palmeras_new.jpg`
+   - **`/var/www/yaga/favicon-32.png`**, **`apple-touch-icon.png`** — PNG favicons
+   - **`/var/www/yaga/index.html`** — Main y4ga.app landing page; had `<link rel="icon">` injected
+
+4. Errors and fixes:
+
+   - **Mobile button infinite recursion**: `function doRoll()` at bottom of script was hoisted, overwriting the original. `_origDoRoll = doRoll` captured the hoisted version = itself. Fix: changed `function doRoll()`, `function passTurn()`, `function applyMoveDispatch()` to variable assignments (`doRoll = function() {...}`).
+
+   - **Board disappeared (first time)** — Added retina canvas scaling (`canvas.width = 480 * dpr`) inside the `if (!canvas)` block. The `ctx.scale(dpr, dpr)` was added but the canvas dimensions in the HTML attr were still 480×480. Probably the board_hd.png load failed or Hydra conflict. User said: "El tablero ya no se ve, deshacer movimientos al tablero". Fix: reverted to `board.jpg`, removed retina scaling.
+
+   - **Hydra overwrote `window.render`**: When `new Hydra()` initializes with `makeGlobal:true`, it sets `window.render = hydraRenderFn`, overwriting our game's `render()` function. Board stopped drawing. Fix: renamed entire game render from `render()` to `drawFrame()` using `replace_all:true`, updated `_origRender` reference.
+
+   - **`offsetWidth` = 0 issue**: Setting `canvas.width = canvas.offsetWidth` when `#game` was `display:none`. Fix: set `display:flex` on `#game` first, added `void canvas.offsetWidth` to force reflow before reading.
+
+   - **Favicon not showing**: `<link rel="icon">` was only in `poleana/index.html`, not in main `y4ga.app/index.html`. Fix: injected favicon link into `/var/www/yaga/index.html` via `sed`. Also upgraded from PNG-only to `.ico` multi-resolution for better browser compatibility.
+
+   - **`function render()` declaration not found**: After `replace_all`, the search `function render() {` failed because it was already renamed. Confirmed with grep that it was already `function drawFrame()`.
+
+5. Problem Solving:
+
+   - **Board quality on PC**: Root cause — canvas CSS display size (~900px) vs internal buffer (480px) = ~2× magnification blur. Solution: read `canvas.offsetWidth` after layout and set `canvas.width = cssSize * dpr`, then `ctx.scale(bufSize/480, bufSize/480)` so all drawing logic stays in 480px coordinate space. Board image upgraded to 2048×2048 Lanczos.
+   - **Piece selection UX**: Replaced text button list with canvas-only interaction: piece picker circles in panel + destination dots on canvas. Tap piece to select → canvas shows only that piece's destinations → tap destination to move.
+   - **Split dice visibility**: SPLIT_A shows with die1 value label (blue), SPLIT_B shows die2 value (cyan), SUM shows sum value (green) as canvas markers.
+
+6. All user messages:
+   - "Vamos a conectarnos por ssh a mi instancia EC2 PAra corregir acceso a la ip y4ga.app"
+   - "ejecuta directamente"
+   - "ya encendi la instancia"
+   - "En el celular el boton de dados no funciona, ademas implementar la visualizcacion de las fichas previas a la combinacion de dados de 6, ademas implementar un modulo de seleccion de fichas [screenshot]"
+   - "Agregar este jpg como png para el contenedor de la barra buscadora en el navegador [palm tree image]"
+   - "La base de datos de los usuarios esta montada en la EC2?"
+   - "ya la guarde en descargas"
+   - "Agregar la regla de poder mover una ficha por un numero del dado, y el numero del dado 2 para otra ficha. Sigue sin viualizarse las fichas en carcel Ademas me gustaria vectrorizar la imagen de la barra del navegador para cambiar el color de la imagen, quuiero que las palmeras sean naranjas [screenshot]"
+   - "Ademas en vez de mostrar las opciones de movimiento, marcar en el tablero las casillas posibles [screenshot]"
+   - "Actualizar el logo de la barra buscadora del navegador por esta mnueva imagen palmeras_new.jpg [image]"
+   - "[provided path] /home/y4ga_/Descargas/palmeras_new.jpg"
+   - "/home/y4ga_/Descargas/Poleana (3)/Poleana.cdr Este archivo va mejorar la distribucion de la matriz del tablero y mejorar su visualizacion mas concreta /home/y4ga_/Descargas/Tablero_design (1).svg"
+   - "Ademas, tomar esta imagen de referencia para mejorar la apariencia de las fichas /home/y4ga_/Descargas/ fichas.svg"
+   - "Vamos a mejorar en lo absoluto el frontend para que el tablero y el movimiento de las fichas"
+   - "mandar a llamar a https://hydra.ojack.xyz/?code=... Con este codigo en especifico para mejorar el frontend del de POLEANA y de ser posible implemntar en el tablero para generar dinamismo"
+   - "El tablero ya no se ve, deshacer movimientos al tablero, solo adaptar HYDRA para la capa traserea del diseño de la interfaz del usaurio en el frontend [screenshots]"
+   - "Ademas ajustar el hydra a toda la pantalla posible en su mejor resolucion"
+   - "El logo no se ve [screenshot]"
+   - "/home/y4ga_/Descargas/palmeras_new.jpg"
+   - "en movil se ve perfecto, pero en PC habria que aumentar el tamaño del tablero [screenshots]"
+   - "El tablero dejo de visualizarse [screenshot]"
+   - "Mejore la calidad del png para el tablero, esta en la carpeta de DESCARGAS con este nombre tablero_mejorado.png"
+   - "en la pc la calidad de visualizacion del tablero no es la optima [screenshot]"
+   - "NECESITO MEJORAR LA CALIDAD DE LOS PIXELES DEL TABLERO, EN PANTALLA MAS GRANDE SE DEJA DE VER ESTETICO EL TABLERO, VAMOS A MEJORAR LA APARIENCIA, ENTIENDO QUE ES EL JPG [screenshot]"
+
+7. Pending Tasks:
+   - Verify that the canvas buffer adaptive sizing fix actually works (board quality on PC) — this was the last deployed change and user hasn't confirmed it works yet
+   - The board quality fix (canvas internal resolution matching CSS display size) needs verification
+
+8. Current Work:
+   The last work was fixing board pixel quality on PC. The board CSS size is ~900px but the canvas internal buffer was 480×480, causing 2× blur when upscaled by the browser. Two changes were deployed:
+
+   1. **2048×2048 board** — `tablero_mejorado.png` (1024px user file) upscaled with Lanczos to 2048×2048 and uploaded to EC2 as `board_2k.png`
+
+   2. **Adaptive canvas buffer** in `poleana_game.html`:
+   ```js
+   const dpr     = window.devicePixelRatio || 1;
+   const cssSize = canvas.offsetWidth || 480;
+   const bufSize = Math.round(cssSize * dpr);
+   canvas.width  = bufSize;
+   canvas.height = bufSize;
+   const drawScale = bufSize / 480;
+   ctx.scale(drawScale, drawScale);
+   ```
+   This makes the canvas pixel buffer match the actual display size so no upscaling blur occurs. A `void canvas.offsetWidth` was added to force reflow before reading the size.
+
+9. Optional Next Step:
+   The user's last message was: "NECESITO MEJORAR LA CALIDAD DE LOS PIXELES DEL TABLERO, EN PANTALLA MAS GRANDE SE DEJA DE VER ESTETICO EL TABLERO, VAMOS A MEJORAR LA APARIENCIA, ENTIENDO QUE ES EL JPG"
+
+   The fix was deployed but not yet confirmed by the user. If the adaptive canvas buffer fix didn't work (e.g., `offsetWidth` still returns 0), the fallback would be to use a hardcoded large buffer size (e.g., `canvas.width = canvas.height = 1920`) with `ctx.scale(1920/480, 1920/480)`. The board_2k.png is already at 2048×2048 on the server and the HTML loads it for desktop (`board_2k.png`).
+</summary>

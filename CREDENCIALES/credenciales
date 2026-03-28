@@ -1,0 +1,30 @@
+# ==============================================================================
+# PROPIEDAD INTELECTUAL DE YAGA
+# Licencia: Propietaria y Confidencial. 
+# Queda estrictamente prohibida la copia, distribución o modificación no autorizada.
+# Módulo: Core Security Middleware (HSTS & No-Sniff)
+# ==============================================================================
+
+from fastapi import FastAPI
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
+app = FastAPI(title="YAGA Core API - Financial & Audio Processing")
+
+class SecureHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware para garantizar el cumplimiento de Privacidad por Diseño (LFPDPPP).
+    Asegura que las respuestas HTTP incluyan cabeceras de seguridad estrictas,
+    cruciales para la transferencia de datos financieros (AES-256 en BD, TLS en tránsito).
+    """
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        # HSTS: Forzar HTTPS en el cliente durante 6 meses (15768000 segundos)
+        response.headers["Strict-Transport-Security"] = "max-age=15768000; includeSubDomains"
+        # No-Sniff: Prevenir ataques de inyección de tipos MIME
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Prevenir Clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+        return response
+
+app.add_middleware(SecureHeadersMiddleware)

@@ -1,0 +1,657 @@
+git status && git diff --stat
+git diff --name-only && echo "---" && git log --oneline -5
+callback
+git diff yaga-backend/app/api/v1/auth.py yaga-backend/app/main.py yaga-backend/app/services/jornada_service.py
+git diff .gitignore && echo "---HISTORICO API---" && cat yaga-backend/app/api/v1/historico.py && echo "---HISTORICO SERVICE---" && cat yaga-backend/app/services/historico_service.py
+callback
+callback
+git add .gitignore frontend/index.html yaga-backend/app/api/v1/auth.py yaga-backend/app/main.py yaga-backend/app/services/jornada_service.py yaga-backend/app/api/v1/historico.py yaga-backend/app/services/historico_service.py data_science/build_map.py didi_extraction.py frontend/didi_extraction.py frontend/uber_extraction.py && git status
+git commit -m "$(cat <<'EOF'
+feat(sprint5): historico de viajes Uber/DiDi con importacion, stats y mapa
+
+- Nuevo servicio historico_service.py: parseo automatico de JSONs Uber y DiDi,
+  normalizacion de montos/fechas/coords, importacion sin duplicados (ON CONFLICT)
+- Nuevos endpoints: POST /historico/import/json, GET /historico/stats, GET /historico/mapa
+- Nuevo endpoint GET /auth/me para validar JWT y obtener datos del conductor
+- cerrar_jornada() extraido como funcion en jornada_service
+- Promedio historico dinamico por conductor (ya no hardcodeado $72.94)
+- Extractores de datos: uber_extraction.py y didi_extraction.py
+- build_map.py para generar mapa interactivo de viajes historicos
+- Frontend index.html actualizado con pantalla de historico
+- .gitignore: agregar *.pem, lock files de LibreOffice, .Rhistory, archivos generados
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)"
+git push origin main
+grep -n "localStorage\|token\|login\|auth\|remember\|sessionStorage" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html | head -80
+grep -n "localStorage\|sessionStorage\|doLogin\|doRegister\|yaga_token\|remember" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html | grep -v "^[0-9]*:.*\/\/" | tail -60
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+grep -n "localStorage.getItem.*yaga_token\|localStorage.setItem.*yaga_token\|localStorage.removeItem.*yaga_token" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html
+git add frontend/index.html && git commit -m "$(cat <<'EOF'
+feat(auth): opcion 'recordar mis datos' en login
+
+Agrega checkbox en la pantalla de login para que el usuario decida
+si guardar su sesion de forma persistente (localStorage) o solo
+durante la sesion actual (sessionStorage).
+
+- Sin recordar: al cerrar el navegador o la pestaña se pide login de nuevo
+- Recordando: al refrescar o volver a abrir va directo al panel
+- Logout limpia ambos storages
+- Registro de cuenta siempre guarda sesion (comportamiento natural)
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)"
+git push origin main
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "cd ~/yaga-project && git pull origin main && sudo cp frontend/index.html /var/www/yaga/index.html && echo 'DEPLOY OK'"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "ls ~/ && find ~ -name 'index.html' 2>/dev/null | head -5"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "ls ~/yaga-project/"
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/index.html /var/www/yaga/index.html && echo 'DEPLOY OK'"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "grep -n 'loginRemember\|auth-remember\|Recordar' /var/www/yaga/index.html | head -10"
+callback
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cat /etc/nginx/conf.d/yaga.conf 2>/dev/null || sudo cat /etc/nginx/sites-enabled/yaga 2>/dev/null || sudo cat /etc/nginx/nginx.conf | head -80"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cat /etc/nginx/conf.d/yaga.conf"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo ls /etc/nginx/conf.d/"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cat /etc/nginx/conf.d/y4ga.app.conf"
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/index.html /var/www/yaga/index.html && sudo nginx -s reload && echo 'OK'"
+git add frontend/index.html && git commit -m "$(cat <<'EOF'
+fix(auth): Enter key en login + navegacion entre campos
+
+- Email → Enter mueve el foco a contraseña
+- Contraseña → Enter llama doLogin()
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)" && git push origin main
+grep -n "userDropdown\|cerrarSesion\|perfil\|mapa\|importOverlay\|importPanel\|btnImport\|switchTab\|tab-mapa\|initUserMenu" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html | head -50
+callback
+grep -n "initUserMenu\|userBtn\|toggleUserMenu\|importOverlay\|import-overlay\|btn-import\|abrirImport\|Conectar\|conectar\|OAuth\|oauth" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html | head -40
+callback
+grep -n "user-dropdown\|user-menu\|ud-item\|ud-header\|\.open" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html | head -30
+callback
+grep -n "user-btn\|user-menu-wrap\|statusDot\|userBtn" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html | head -20
+callback
+callback
+callback
+callback
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/index.html /var/www/yaga/index.html && sudo nginx -s reload && echo 'OK'"
+git add frontend/index.html && git commit -m "$(cat <<'EOF'
+fix(ux): menu usuario mas visible + importar historial accesible
+
+- Boton de usuario cambia de circulo a pastilla con inicial + flecha (Y ▾)
+  para indicar que es un menu desplegable
+- Agrega opcion 'Importar historial Uber/DiDi' directamente en el menu
+  (antes solo accesible desde la pantalla de Mapa)
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)" && git push origin main
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "ls /var/www/ && echo '---' && ls /var/www/yaga/ && echo '---' && sudo cat /etc/nginx/conf.d/y4ga.app.conf"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "ls /var/www/yaga/yaga/ && echo '---' && ls /var/www/yaga/poleana/"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "head -5 /var/www/yaga/yaga/index.html && echo '...' && head -5 /var/www/yaga/poleana/index.html"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "grep -i 'title\|description\|poleana\|h1\|logo' /var/www/yaga/poleana/index.html | head -15"
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /home/y4ga_/Documentos/Project_Y4GA_/frontend/landing.html ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/landing.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/landing.html /var/www/yaga/index.html && sudo cp /var/www/yaga/index.html /var/www/yaga/yaga/index.html 2>/dev/null || true && echo 'done'"
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/yaga_app.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/yaga_app.html /var/www/yaga/yaga/index.html && sudo nginx -s reload && echo 'OK'" 
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "grep -c 'Y4GA\|Selecciona' /var/www/yaga/index.html && grep -c 'doLogin\|authScreen' /var/www/yaga/yaga/index.html"
+git add frontend/landing.html && git commit -m "$(cat <<'EOF'
+feat: landing page de seleccion en y4ga.app
+
+Reemplaza la raiz del sitio con una pagina de seleccion entre YAGA
+y POLEANA. Cada proyecto tiene su propia tarjeta con icono y descripcion.
+YAGA → /yaga/ | POLEANA → /poleana/
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)" && git push origin main
+grep -A 10 "get_mapa_data" /home/y4ga_/Documentos/Project_Y4GA_/yaga-backend/app/services/historico_service.py | head -15
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "cd ~/yaga-project && docker compose exec db psql -U yaga -d yagadb -c \"SELECT DISTINCT conductor_id FROM viajes_historicos LIMIT 5;\" 2>/dev/null"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "docker exec \$(docker ps -q --filter name=db) psql -U yaga -d yagadb -c 'SELECT DISTINCT conductor_id FROM viajes_historicos LIMIT 5;' 2>/dev/null"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "docker ps --format '{{.Names}}' && docker ps --format '{{.ID}} {{.Names}}'"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "docker exec yaga_postgres psql -U yaga -d yagadb -c 'SELECT DISTINCT conductor_id FROM viajes_historicos LIMIT 5;'"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "docker exec yaga_postgres psql -U postgres -d yagadb -c 'SELECT DISTINCT conductor_id FROM viajes_historicos LIMIT 5;' 2>/dev/null || docker exec yaga_postgres psql -U postgres -c '\l' 2>/dev/null | head -10"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "cat ~/yaga-project/docker-compose.yml | grep -A5 'POSTGRES\|postgres\|DB_'"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "docker exec yaga_postgres psql -U yaga_user -d yaga_db -c 'SELECT DISTINCT conductor_id FROM viajes_historicos LIMIT 5;'"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "docker exec yaga_postgres psql -U yaga_user -d yaga_db -c \"SELECT id, nombre, email FROM conductores WHERE email LIKE '%ortega%' OR email LIKE '%316%';\""
+callback
+callback
+callback
+callback
+callback
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "head -20 /var/www/yaga/index.html"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cat /etc/nginx/conf.d/y4ga.app.conf"
+cat > /tmp/y4ga.app.conf << 'EOF'
+server {
+    listen 443 ssl;
+    server_name y4ga.app www.y4ga.app;
+
+    ssl_certificate     /etc/ssl/cloudflare/y4ga.app.pem;
+    ssl_certificate_key /etc/ssl/cloudflare/y4ga.app.key;
+
+    root /var/www/yaga;
+    index index.html;
+
+    location /api/v1/poleana/ws/ {
+        proxy_pass http://localhost:8000/api/v1/poleana/ws/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 3600;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:8000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /health {
+        proxy_pass http://localhost:8000/health;
+    }
+
+    location /manifest.json {
+        add_header Content-Type application/manifest+json;
+        add_header Cache-Control "no-cache, no-store";
+    }
+
+    # Landing principal — nunca cachear
+    location = / {
+        try_files /index.html =404;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma no-cache;
+        add_header Expires 0;
+    }
+
+    # App YAGA (SPA)
+    location /yaga/ {
+        try_files $uri $uri/ /yaga/index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma no-cache;
+        add_header Expires 0;
+    }
+
+    # App POLEANA (SPA)
+    location /poleana/ {
+        try_files $uri $uri/ /poleana/index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma no-cache;
+        add_header Expires 0;
+    }
+
+    # Resto de archivos estaticos
+    location / {
+        try_files $uri $uri/ =404;
+        add_header Cache-Control "no-cache";
+    }
+}
+
+server {
+    listen 80;
+    server_name y4ga.app www.y4ga.app;
+
+    location /health {
+        proxy_pass http://localhost:8000/health;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+EOF
+echo "Config generado"
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /tmp/y4ga.app.conf ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/y4ga.app.conf && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/y4ga.app.conf /etc/nginx/conf.d/y4ga.app.conf && sudo nginx -t && sudo nginx -s reload && echo 'NGINX OK'"
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/yaga_app.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/yaga_app.html /var/www/yaga/yaga/index.html && echo 'YAGA OK'"
+git add frontend/index.html && git commit -m "$(cat <<'EOF'
+fix(ux): boton regreso a landing en pantalla de login/registro
+
+Agrega enlace '← Apps' en la esquina superior izquierda del auth screen
+para que el usuario pueda volver a y4ga.app/ sin tener que usar el boton
+atras del navegador.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)" && git push origin main
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "grep -c 'Selecciona\|auth-card\|doLogin' /var/www/yaga/index.html && echo '---root title:' && grep '<title>' /var/www/yaga/index.html && echo '---yaga title:' && grep '<title>' /var/www/yaga/yaga/index.html"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "grep 'Selecciona\|doLogin\|auth-card' /var/www/yaga/index.html"
+grep -n "serviceWorker\|ServiceWorker\|sw.js\|register(" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html | head -10
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "ls /var/www/yaga/*.js 2>/dev/null && cat /var/www/yaga/manifest.json 2>/dev/null | head -10"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "curl -s -I http://localhost/ | head -10 && echo '---' && curl -s http://localhost/ | grep -m3 '<title>\|Selecciona\|doLogin'"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "curl -sk https://localhost/ | grep -m3 '<title>\|Selecciona\|doLogin\|auth-card'"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "cat /var/www/yaga/manifest.json && echo '---' && grep -r 'start_url\|scope' /var/www/yaga/*.json 2>/dev/null"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cat /var/www/yaga/manifest.json"
+grep -n "manifest\|link rel" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html | head -10
+grep -n "manifest\|link rel" /home/y4ga_/Documentos/Project_Y4GA_/frontend/landing.html | head -5
+callback
+callback
+cat > /home/y4ga_/Documentos/Project_Y4GA_/frontend/manifest.json << 'EOF'
+{
+  "name": "YAGA - Asistente para Conductores",
+  "short_name": "YAGA",
+  "description": "Registra tus viajes y gastos con comandos de voz",
+  "start_url": "/yaga/",
+  "scope": "/yaga/",
+  "display": "standalone",
+  "background_color": "#0f1923",
+  "theme_color": "#0f1923",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ]
+}
+EOF
+echo "OK"
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" \
+  /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html \
+  /home/y4ga_/Documentos/Project_Y4GA_/frontend/manifest.json \
+  ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/ && \
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "
+  sudo cp /tmp/index.html /var/www/yaga/yaga/index.html &&
+  sudo cp /tmp/manifest.json /var/www/yaga/yaga/manifest.json &&
+  sudo rm -f /var/www/yaga/manifest.json &&
+  sudo nginx -s reload &&
+  echo 'DEPLOY OK'
+"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "
+  echo '--- Root index:' && grep '<title>\|Selecciona' /var/www/yaga/index.html
+  echo '--- Root manifest:' && ls /var/www/yaga/manifest.json 2>&1
+  echo '--- /yaga/ manifest scope:' && grep 'scope\|start_url' /var/www/yaga/yaga/manifest.json
+"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo grep 'scope\|start_url' /var/www/yaga/yaga/manifest.json"
+git add frontend/index.html frontend/manifest.json && git commit -m "$(cat <<'EOF'
+fix(pwa): corregir scope del manifest para no interferir con la landing
+
+El manifest tenia start_url='/' y scope='/' lo que causaba que Firefox
+abriera la PWA de YAGA directamente en y4ga.app/ en lugar de la landing.
+
+- Nuevo manifest en /yaga/manifest.json con scope='/yaga/' y start_url='/yaga/'
+- YAGA app apunta al nuevo manifest con ruta absoluta /yaga/manifest.json
+- El manifest viejo en la raiz fue eliminado del servidor
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)" && git push origin main
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo mkdir -p /var/www/yaga/select && sudo cp /var/www/yaga/index.html /var/www/yaga/select/index.html && echo 'OK'"
+cat > /tmp/y4ga.app.conf << 'NGINX'
+server {
+    listen 443 ssl;
+    server_name y4ga.app www.y4ga.app;
+
+    ssl_certificate     /etc/ssl/cloudflare/y4ga.app.pem;
+    ssl_certificate_key /etc/ssl/cloudflare/y4ga.app.key;
+
+    root /var/www/yaga;
+    index index.html;
+
+    location /api/v1/poleana/ws/ {
+        proxy_pass http://localhost:8000/api/v1/poleana/ws/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 3600;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:8000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /health {
+        proxy_pass http://localhost:8000/health;
+    }
+
+    # Raiz — redirige siempre a /select/ (302 no se cachea)
+    location = / {
+        return 302 /select/;
+    }
+
+    # Landing de seleccion
+    location /select/ {
+        try_files $uri $uri/ /select/index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma no-cache;
+        add_header Expires 0;
+    }
+
+    # App YAGA (SPA)
+    location /yaga/ {
+        try_files $uri $uri/ /yaga/index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma no-cache;
+        add_header Expires 0;
+    }
+
+    # App POLEANA (SPA)
+    location /poleana/ {
+        try_files $uri $uri/ /poleana/index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma no-cache;
+        add_header Expires 0;
+    }
+
+    # Archivos estaticos
+    location / {
+        try_files $uri $uri/ =404;
+        add_header Cache-Control "no-cache";
+    }
+}
+
+server {
+    listen 80;
+    server_name y4ga.app www.y4ga.app;
+
+    location /health {
+        proxy_pass http://localhost:8000/health;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+NGINX
+echo "OK"
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" \
+  /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html \
+  /tmp/y4ga.app.conf \
+  ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/ && \
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "
+  sudo cp /tmp/index.html /var/www/yaga/yaga/index.html &&
+  sudo cp /var/www/yaga/yaga/index.html /tmp/check_back && grep 'auth-back' /tmp/check_back &&
+  sudo cp /tmp/y4ga.app.conf /etc/nginx/conf.d/y4ga.app.conf &&
+  sudo nginx -t && sudo nginx -s reload &&
+  echo 'DEPLOY OK'
+"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "
+  echo '--- / redirige a:' && curl -sk -o /dev/null -w '%{redirect_url}' https://localhost/ 
+  echo && echo '--- /select/ sirve:' && curl -sk https://localhost/select/ | grep '<title>\|Selecciona'
+  echo && echo '--- /yaga/ sirve:' && curl -sk https://localhost/yaga/ | grep '<title>'
+"
+git add frontend/index.html && git commit -m "$(cat <<'EOF'
+fix(routing): redirigir / a /select/ para evitar cache del navegador
+
+y4ga.app/ ahora devuelve 302 -> /select/ donde vive la landing page.
+El boton '← Apps' en YAGA apunta a /select/ en lugar de /.
+Esto evita que el navegador cachee la landing como la app de YAGA.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)" && git push origin main
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "
+  echo '--- Permisos /select/:' && ls -la /var/www/yaga/select/
+  echo '--- Test curl /select/:' && curl -sk https://localhost/select/ | grep '<title>'
+  echo '--- Test curl / redirect:' && curl -sk -I https://localhost/ | grep 'Location\|HTTP'
+"
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/index.html /var/www/yaga/yaga/index.html && sudo cp /tmp/index.html /var/www/yaga/index.html && sudo nginx -s reload && echo 'OK'"
+git add frontend/index.html && git commit -m "$(cat <<'EOF'
+feat(ux): pantalla de seleccion integrada en YAGA app
+
+Elimina la dependencia de rutas externas para la landing page.
+La seleccion YAGA/POLEANA ahora vive dentro del flujo de la app:
+
+- Sin sesion: muestra selector de app (YAGA o POLEANA)
+- Elige YAGA: muestra pantalla de login
+- Elige POLEANA: redirige a /poleana/
+- Boton '<- Apps' en login: vuelve al selector (sin navegar a URL externa)
+- Con sesion valida: salta directo al dashboard
+
+Esto evita todos los problemas de cache de Cloudflare/navegador.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)" && git push origin main
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "
+  echo '--- /poleana/ via localhost:' && curl -sk https://localhost/poleana/ | grep '<title>'
+  echo '--- nginx config /poleana:' && sudo grep -A4 'poleana' /etc/nginx/conf.d/y4ga.app.conf
+  echo '--- archivos en /poleana/:' && ls /var/www/yaga/poleana/
+"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo tail -20 /var/log/nginx/access.log | grep poleana"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo tail -30 /var/log/nginx/access.log | grep -v '127.0.0.1' | tail -15"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "curl -sk https://localhost/poleana/index.html | grep '<title>'"
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/index.html /var/www/yaga/index.html && sudo cp /tmp/index.html /var/www/yaga/yaga/index.html && echo 'OK'"
+git add frontend/index.html && git commit -m "$(cat <<'EOF'
+fix(poleana): usar /poleana/index.html para evitar 404 cacheado en Cloudflare
+
+Cloudflare tiene cacheado un 404 para /poleana/ (con trailing slash).
+Usar la URL explicita /poleana/index.html evita ese cache.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)" && git push origin main
+cat > /tmp/y4ga.app.conf << 'NGINX'
+server {
+    listen 443 ssl;
+    server_name y4ga.app www.y4ga.app;
+
+    ssl_certificate     /etc/ssl/cloudflare/y4ga.app.pem;
+    ssl_certificate_key /etc/ssl/cloudflare/y4ga.app.key;
+
+    root /var/www/yaga;
+    index index.html;
+
+    location /api/v1/poleana/ws/ {
+        proxy_pass http://localhost:8000/api/v1/poleana/ws/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 3600;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:8000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /health {
+        proxy_pass http://localhost:8000/health;
+    }
+
+    # Header global anti-cache para Cloudflare (aplica a todas las respuestas HTML)
+    add_header CDN-Cache-Control "no-store" always;
+    add_header Cloudflare-CDN-Cache-Control "no-store" always;
+
+    location = / {
+        try_files /index.html =404;
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma no-cache always;
+        add_header Expires 0 always;
+        add_header CDN-Cache-Control "no-store" always;
+        add_header Cloudflare-CDN-Cache-Control "no-store" always;
+    }
+
+    location /yaga/ {
+        try_files $uri $uri/ /yaga/index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma no-cache always;
+        add_header Expires 0 always;
+        add_header CDN-Cache-Control "no-store" always;
+        add_header Cloudflare-CDN-Cache-Control "no-store" always;
+    }
+
+    location /poleana/ {
+        try_files $uri $uri/ /poleana/index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma no-cache always;
+        add_header Expires 0 always;
+        add_header CDN-Cache-Control "no-store" always;
+        add_header Cloudflare-CDN-Cache-Control "no-store" always;
+    }
+
+    location /select/ {
+        try_files $uri $uri/ /select/index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header CDN-Cache-Control "no-store" always;
+        add_header Cloudflare-CDN-Cache-Control "no-store" always;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+        add_header Cache-Control "no-cache" always;
+    }
+}
+
+server {
+    listen 80;
+    server_name y4ga.app www.y4ga.app;
+
+    location /health {
+        proxy_pass http://localhost:8000/health;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+NGINX
+echo "OK"
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /tmp/y4ga.app.conf ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/y4ga.app.conf && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo cp /tmp/y4ga.app.conf /etc/nginx/conf.d/y4ga.app.conf && sudo nginx -t && sudo nginx -s reload && echo 'OK'"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "
+  echo '=== Archivos poleana ===' && sudo ls -la /var/www/yaga/poleana/
+  echo '=== curl /poleana/index.html ===' && curl -sk -o /dev/null -w '%{http_code}' https://localhost/poleana/index.html
+  echo && echo '=== curl con host y4ga.app ===' && curl -sk -o /dev/null -w '%{http_code}' -H 'Host: y4ga.app' https://localhost/poleana/index.html
+  echo && echo '=== nginx log poleana ===' && sudo tail -5 /var/log/nginx/access.log | grep poleana || echo 'sin registros'
+  echo && echo '=== nginx error log ===' && sudo tail -10 /var/log/nginx/error.log | tail -5
+"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo tail -f /var/log/nginx/access.log &
+sleep 8
+kill %1 2>/dev/null
+echo '--- DONE ---'" &
+sleep 2
+echo "Log monitor started - intenta abrir y4ga.app/poleana/index.html ahora"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "sudo tail -20 /var/log/nginx/access.log | grep -v health | grep -v '127.0.0.1'"
+cat > /tmp/y4ga.app.conf << 'NGINX'
+server {
+    listen 443 ssl;
+    server_name y4ga.app www.y4ga.app;
+
+    ssl_certificate     /etc/ssl/cloudflare/y4ga.app.pem;
+    ssl_certificate_key /etc/ssl/cloudflare/y4ga.app.key;
+
+    root /var/www/yaga;
+    index index.html;
+
+    location /api/v1/poleana/ws/ {
+        proxy_pass http://localhost:8000/api/v1/poleana/ws/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 3600;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:8000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /health {
+        proxy_pass http://localhost:8000/health;
+    }
+
+    location /manifest.json {
+        add_header Content-Type application/manifest+json;
+        add_header Cache-Control "no-cache, no-store" always;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+        add_header CDN-Cache-Control "no-store" always;
+        add_header Cloudflare-CDN-Cache-Control "no-store" always;
+    }
+}
+
+server {
+    listen 80;
+    server_name y4ga.app www.y4ga.app;
+
+    location /health {
+        proxy_pass http://localhost:8000/health;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+NGINX
+
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" /tmp/y4ga.app.conf ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com:/tmp/y4ga.app.conf && \
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "
+  sudo cp /tmp/y4ga.app.conf /etc/nginx/conf.d/y4ga.app.conf &&
+  sudo nginx -t && sudo nginx -s reload &&
+  echo 'Test poleana:' && curl -sk -o /dev/null -w '%{http_code}' -H 'Host: y4ga.app' https://localhost/poleana/ &&
+  echo && echo 'Test root:' && curl -sk -o /dev/null -w '%{http_code}' -H 'Host: y4ga.app' https://localhost/ &&
+  echo && echo 'NGINX OK'
+"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" ec2-user@ec2-3-19-35-76.us-east-2.compute.amazonaws.com "
+  echo '=== Cloudflare response for /poleana/index.html ===' 
+  curl -s -o /dev/null -w 'HTTP: %{http_code}\nSize: %{size_download}\nRedirect: %{redirect_url}\n' https://y4ga.app/poleana/index.html
+  echo '=== Cloudflare response headers ==='
+  curl -sI https://y4ga.app/poleana/index.html | head -15
+  echo '=== Cloudflare response for /poleana/ ==='
+  curl -s -o /dev/null -w 'HTTP: %{http_code}\n' https://y4ga.app/poleana/
+  echo '=== Nginx log after requests ==='
+  sudo tail -5 /var/log/nginx/access.log | grep poleana
+"

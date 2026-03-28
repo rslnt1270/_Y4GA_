@@ -5,7 +5,7 @@ Copyright (c) 2026 YAGA Project
 import asyncpg
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://yaga_user:Yaga2026_Secure#Pass@postgres:5432/yaga_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://yaga_user:Yaga2026SecurePass@localhost:5432/yaga_db")
 
 _pool = None
 

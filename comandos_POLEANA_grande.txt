@@ -1,0 +1,369 @@
+callback
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o ConnectTimeout=10 -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "echo 'Conexión OK' && uptime"
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o ConnectTimeout=15 -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "echo 'Conexión OK' && uptime"
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "ip addr show | grep 'inet ' && echo '---' && sudo systemctl status nginx --no-pager -l && echo '---' && docker ps"
+wc -l ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/poleana_game.html
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+callback
+callback
+ls -lt /home/y4ga_/Descargas/*.jpg | head -5
+callback
+callback
+callback
+callback
+find /home/y4ga_/Imágenes /home/y4ga_/Pictures /tmp ~/Desktop 2>/dev/null -name "*.jpg" -o -name "*.png" -o -name "*.jpeg" 2>/dev/null | xargs ls -lt 2>/dev/null | head -10
+ls -lt /home/y4ga_/Descargas/*.jpg /home/y4ga_/Descargas/*.png /home/y4ga_/Descargas/*.jpeg /home/y4ga_/Descargas/*.webp 2>/dev/null | head -8
+callback
+convert /home/y4ga_/Descargas/a833b92228920a4a8502ae2c79921ceb.jpg \
+  -fuzz 8% -transparent white \
+  -resize 64x64 \
+  /tmp/favicon.png && echo "OK: $(identify /tmp/favicon.png)"
+# También generar versión 192x192 para móvil (apple-touch-icon)
+magick /home/y4ga_/Descargas/a833b92228920a4a8502ae2c79921ceb.jpg \
+  -fuzz 8% -transparent white \
+  -resize 192x192 \
+  /tmp/apple-touch-icon.png && echo "OK"
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  /tmp/favicon.png /tmp/apple-touch-icon.png \
+  ec2-user@3.19.35.76:/tmp/
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/favicon.png /tmp/apple-touch-icon.png /var/www/yaga/ && echo OK'
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+callback
+callback
+callback
+callback
+callback
+callback
+magick /home/y4ga_/Descargas/a833b92228920a4a8502ae2c79921ceb.jpg \
+  -fuzz 5% -fill "#FF8C00" -opaque black \
+  -fuzz 8% -transparent white \
+  -resize 64x64 /tmp/favicon.png && \
+magick /home/y4ga_/Descargas/a833b92228920a4a8502ae2c79921ceb.jpg \
+  -fuzz 5% -fill "#FF8C00" -opaque black \
+  -fuzz 8% -transparent white \
+  -resize 192x192 /tmp/apple-touch-icon.png && \
+echo "OK: $(identify /tmp/favicon.png)"
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  /tmp/favicon.png /tmp/apple-touch-icon.png \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && \
+   sudo cp /tmp/favicon.png /tmp/apple-touch-icon.png /var/www/yaga/ && \
+   echo OK'
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+ls -lt /home/y4ga_/Descargas/ | head -5
+magick /home/y4ga_/Descargas/palmeras_new.jpg \
+  -fuzz 6% -transparent white \
+  -resize 64x64 /tmp/favicon.png && \
+magick /home/y4ga_/Descargas/palmeras_new.jpg \
+  -fuzz 6% -transparent white \
+  -resize 192x192 /tmp/apple-touch-icon.png && \
+echo "OK: $(identify /tmp/favicon.png)"
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  /tmp/favicon.png /tmp/apple-touch-icon.png \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/favicon.png /tmp/apple-touch-icon.png /var/www/yaga/ && echo OK'
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'grep -n "favicon\|link rel\|<head" /var/www/yaga/index.html | head -20'
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sed -n "1,10p" /var/www/yaga/index.html'
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo sed -i "s|<title>y4ga.app</title>|<title>y4ga.app</title>\n  <link rel=\"icon\" type=\"image/png\" href=\"/favicon.png\">\n  <link rel=\"apple-touch-icon\" href=\"/apple-touch-icon.png\">|" /var/www/yaga/index.html && grep "favicon" /var/www/yaga/index.html'
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'ls -la /var/www/yaga/favicon.png && curl -s -o /dev/null -w "%{http_code}" https://y4ga.app/favicon.png'
+callback
+SRC=/home/y4ga_/Descargas/palmeras_new.jpg
+
+# PNG 32x32 (estándar favicon)
+magick "$SRC" -fuzz 6% -transparent white -resize 32x32 /tmp/favicon-32.png
+
+# PNG 64x64
+magick "$SRC" -fuzz 6% -transparent white -resize 64x64 /tmp/favicon-64.png
+
+# PNG 180x180 (Apple touch icon)
+magick "$SRC" -fuzz 6% -transparent white -resize 180x180 /tmp/apple-touch-icon.png
+
+# ICO multi-resolución (16, 32, 48) — máxima compatibilidad con todos los browsers
+magick "$SRC" -fuzz 6% -transparent white \
+  \( -clone 0 -resize 16x16 \) \
+  \( -clone 0 -resize 32x32 \) \
+  \( -clone 0 -resize 48x48 \) \
+  -delete 0 /tmp/favicon.ico
+
+echo "Archivos generados:"
+ls -lh /tmp/favicon*.* /tmp/apple-touch-icon.png
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+
+# Subir todos los archivos
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  /tmp/favicon.ico /tmp/favicon-32.png /tmp/favicon-64.png \
+  /tmp/apple-touch-icon.png \
+  ec2-user@3.19.35.76:/tmp/
+
+# Copiar a web root y actualizar HTML con .ico como favicon primario
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 '
+  sudo cp /tmp/favicon.ico /tmp/favicon-32.png /tmp/favicon-64.png /tmp/apple-touch-icon.png /var/www/yaga/
+
+  # Actualizar index.html: usar .ico como favicon primario + PNG fallback
+  sudo sed -i "s|<link rel=\"icon\" type=\"image/png\" href=\"/favicon.png\">|<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\">\n  <link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon-32.png\">\n  <link rel=\"icon\" type=\"image/png\" sizes=\"64x64\" href=\"/favicon-64.png\">|" /var/www/yaga/index.html
+
+  echo "HTML actualizado:"
+  grep "favicon" /var/www/yaga/index.html
+'
+# También actualizar poleana/index.html con el mismo ico
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 '
+  sudo sed -i "s|<link rel=\"icon\" type=\"image/png\" href=\"/favicon.png\">|<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\">\n  <link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon-32.png\">|" /var/www/yaga/poleana/index.html
+  echo OK
+'
+callback
+wc -l "/home/y4ga_/Descargas/Tablero_design (1).svg" && head -50 "/home/y4ga_/Descargas/Tablero_design (1).svg"
+# Convertir el SVG a PNG para visualizarlo
+magick -size 800x800 "/home/y4ga_/Descargas/Tablero_design (1).svg" /tmp/tablero_preview.png 2>&1 | head -5
+echo "Exit: $?"
+callback
+# Convertir SVG a PNG de alta resolución (1024x1024) para usar como board
+magick -density 150 "/home/y4ga_/Descargas/Tablero_design (1).svg" \
+  -resize 1024x1024 /tmp/board_hd.png && \
+echo "OK: $(identify /tmp/board_hd.png)"
+callback
+ls /home/y4ga_/Descargas/ | grep -i ficha
+magick "/home/y4ga_/Descargas/fichas.svg" -resize 600x600 /tmp/fichas_preview.png 2>&1
+magick "/home/y4ga_/Descargas/fichas.jpg" -resize 600x600 /tmp/fichas_jpg.png 2>&1
+echo "done"
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no /tmp/board_hd.png ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/board_hd.png /var/www/yaga/poleana/board_hd.png && echo OK'
+callback
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+python3 -c "
+import base64, urllib.parse
+encoded = 'JTJGJTJGJTIwbGljZW5zZWQlMjB3aXRoJTIwQ0MlMjBCWS1OQy1TQSUyMDQuMCUyMGh0dHBzJTNBJTJGJTJGY3JlYXRpdmVjb21tb25zLm9yZyUyRmxpY2Vuc2VzJTJGYnktbmMtc2ElMkY0LjAlMkYlMEElMkYlMkYlMjBNYWhh\
+bGlhJTIwSC1SJTBBJTJGJTJGJTIwSUclM0ElMjAlNDBtbV9ocl8lMEFzaGFwZSgoKSUyMCUzRCUzRSUyME1hdGguc2luKHRpbWUpJTIwJTJCJTIwMC41NDIlMjAqJTIwMy45NjMpJTBBJTA5LnJvdGF0ZSgoKSUyMCUzRCUzRSUyME1hdGguUEklMjAqJTIwbW91c2UueCUyMCUyRiUyMDI2Ni40KSUwQSUwOS5yZXBlYXRYKDMuMTkzKSUwQSUwOS5yZXBlYXRZKCgpJTIwJTNEJTNFJTIwTWF0aC5zaW4odGltZSklMjAqJTIwNC42NSklMEElMDkuc2NhbGUoKCklMjAlM0QlM0UlMjBNYXRoLlBJJTIwJTJGJTIwNi44NjQpJTBBJTA5LmJsZW5kKHNyYyhvMCklMEElMDklMDkuY29sb3IoMC4xNTIlMkMlMjAwLjE5MyUyQyUyMDAuNzI0KSklMEElMDkubW9kdWxhdGUob3NjKDI1LjQ5JTJDJTIwMC4yNCUyQyUyMDAuNTgzKSklMEElMDkua2FsZWlkKDMuNTM1KSUwQSUwOS5vdXQobzApJTNCJTBBcmVuZGVyKG8wKSUzQg=='
+decoded = urllib.parse.unquote(base64.b64decode(encoded + '==').decode())
+print(decoded)
+"
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+callback
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+ssh -i ~/Documentos/Poleana_Project/yaga_backend.pem -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'ls -lh /var/www/yaga/poleana/ && curl -s -o /dev/null -w "%{http_code}" https://y4ga.app/poleana/board.jpg'
+grep -n "render()" ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html | head -30
+callback
+grep -n "function render\b\|function drawFrame" ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html
+grep -n "drawFrame\|render(" ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html | grep -v "render(o0)\|_origRender\|renderGame\|renderWait"
+grep -n "render" ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html | grep -v "drawFrame\|hydra\|Hydra\|render(o0)\|renderWait\|renderWaiting\|renderBoard"
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+magick -density 200 "/home/y4ga_/Descargas/Tablero_design (1).svg" \
+  -resize 2048x2048 /tmp/board_2k.png && \
+echo "OK: $(identify /tmp/board_2k.png | awk '{print $3, $7}')"
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no /tmp/board_2k.png ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/board_2k.png /var/www/yaga/poleana/board_2k.png && echo OK'
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+ls -lh /home/y4ga_/Descargas/tablero_mejorado.png && identify /home/y4ga_/Descargas/tablero_mejorado.png
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  /home/y4ga_/Descargas/tablero_mejorado.png \
+  ec2-user@3.19.35.76:/tmp/board_2k.png && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/board_2k.png /var/www/yaga/poleana/board_2k.png && \
+   ls -lh /var/www/yaga/poleana/board_2k.png && echo OK'
+# Upscale tablero_mejorado a 2048x2048 con Lanczos (mejor algoritmo anti-aliasing)
+magick /home/y4ga_/Descargas/tablero_mejorado.png \
+  -filter Lanczos -resize 2048x2048 \
+  -quality 95 /tmp/board_2k.png && \
+echo "OK: $(identify /tmp/board_2k.png | awk '{print $3, $7}')"
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no /tmp/board_2k.png ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/board_2k.png /var/www/yaga/poleana/board_2k.png && echo OK'
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" -o StrictHostKeyChecking=no \
+  ~/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html \
+  ec2-user@3.19.35.76:/tmp/ && \
+ssh -i "$KEY" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 \
+  'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo OK'
+callback
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem && ssh -i "$KEY" -o ConnectTimeout=10 ec2-user@3.19.35.76 'echo "conectado ok" && docker ps --format "{{.Names}} {{.Status}}"'
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem && ssh -i "$KEY" ec2-user@3.19.35.76 'grep -n "offsetWidth\|bufSize\|drawScale\|board_2k" /var/www/yaga/poleana/index.html | head -20'
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem && ssh -i "$KEY" ec2-user@3.19.35.76 'ls -lh /var/www/yaga/poleana/board_2k.png /var/www/yaga/poleana/board.jpg 2>&1'
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'
+callback
+callback
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'
+callback
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+ssh -i "$KEY" ec2-user@3.19.35.76 'curl -s -o /var/www/yaga/poleana/hydra-synth.js "https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js" && ls -lh /var/www/yaga/poleana/hydra-synth.js && echo "Descargado OK"'
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo curl -s -o /var/www/yaga/poleana/hydra-synth.js "https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js" && ls -lh /var/www/yaga/poleana/hydra-synth.js && echo "OK"'
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'
+callback
+callback
+callback
+callback
+callback
+KEY=~/Documentos/Poleana_Project/yaga_backend.pem
+scp -i "$KEY" /home/y4ga_/Documentos/Poleana_Project/Poleana_Project/web/poleana_game.html ec2-user@3.19.35.76:/tmp/poleana_game.html && \
+ssh -i "$KEY" ec2-user@3.19.35.76 'sudo cp /tmp/poleana_game.html /var/www/yaga/poleana/index.html && echo "Deploy OK"'

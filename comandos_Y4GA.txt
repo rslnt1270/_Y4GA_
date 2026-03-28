@@ -1,0 +1,93 @@
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no "/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html" ec2-user@3.19.35.76:/var/www/yaga/index.html
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no "/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html" ec2-user@3.19.35.76:/home/ec2-user/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "sudo cp /home/ec2-user/index.html /var/www/yaga/index.html && sudo chown nginx:nginx /var/www/yaga/index.html && echo OK"
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no "/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html" ec2-user@3.19.35.76:/home/ec2-user/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "sudo cp /home/ec2-user/index.html /var/www/yaga/index.html && sudo chown nginx:nginx /var/www/yaga/index.html && echo OK"
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no "/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html" ec2-user@3.19.35.76:/home/ec2-user/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "sudo cp /home/ec2-user/index.html /var/www/yaga/index.html && sudo chown nginx:nginx /var/www/yaga/index.html && echo OK"
+callback
+callback
+callback
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no "/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html" ec2-user@3.19.35.76:/home/ec2-user/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "sudo cp /home/ec2-user/index.html /var/www/yaga/index.html && sudo chown nginx:nginx /var/www/yaga/index.html && echo OK"
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no "/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html" ec2-user@3.19.35.76:/home/ec2-user/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "sudo cp /home/ec2-user/index.html /var/www/yaga/index.html && sudo chown nginx:nginx /var/www/yaga/index.html && echo OK"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "stat /var/www/yaga/index.html && grep -c 'mapa-control' /var/www/yaga/index.html && grep -c 'mapaStats' /var/www/yaga/index.html"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "sudo cat /etc/nginx/conf.d/*.conf 2>/dev/null || sudo cat /etc/nginx/sites-enabled/* 2>/dev/null || sudo nginx -T 2>/dev/null | grep -A 30 'server {' | head -60"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "curl -s --resolve 'y4ga.app:443:127.0.0.1' https://y4ga.app/yaga/ | grep -o 'mapa-control\|mapaStats' | head -5"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "curl -sk https://localhost/yaga/ --insecure | grep -o 'mapa-control\|mapaStats\|mc-stats' | head -5"
+ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "ls -la /var/www/yaga/ && echo '---' && ls -la /var/www/yaga/yaga/ 2>/dev/null || echo 'no /yaga subdir'"
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no "/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html" ec2-user@3.19.35.76:/home/ec2-user/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "sudo cp /home/ec2-user/index.html /var/www/yaga/yaga/index.html && sudo chown nginx:nginx /var/www/yaga/yaga/index.html && grep -c 'mapa-control' /var/www/yaga/yaga/index.html && echo OK"
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+grep -n "mapaResultados\|mc-chip-grupo\|mc-chip\b\|filtro-chip\|mapaStats\|mapaLeyenda\|mapaFiltros\|mapaQuery" /home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html | grep -v "mc-chip-sep\|mc-chip\.active\|mc-chip:first"
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no "/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html" ec2-user@3.19.35.76:/home/ec2-user/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "sudo cp /home/ec2-user/index.html /var/www/yaga/yaga/index.html && sudo chown nginx:nginx /var/www/yaga/yaga/index.html && grep -c 'mapa-panel' /var/www/yaga/yaga/index.html && echo DESPLEGADO"
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+callback
+scp -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no "/home/y4ga_/Documentos/Project_Y4GA_/frontend/index.html" ec2-user@3.19.35.76:/home/ec2-user/index.html && ssh -i "/home/y4ga_/Documentos/Project_Y4GA_/yaga_backend.pem" -o StrictHostKeyChecking=no ec2-user@3.19.35.76 "sudo cp /home/ec2-user/index.html /var/www/yaga/yaga/index.html && sudo chown nginx:nginx /var/www/yaga/yaga/index.html && grep -c 'conductor-card\|carAvatarSVG\|colorNameToHex' /var/www/yaga/yaga/index.html && echo OK"
+callback
+callback

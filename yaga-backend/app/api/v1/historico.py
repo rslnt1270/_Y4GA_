@@ -9,7 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Header, Query
 from jose import JWTError
 from services.auth_service import decode_token
-from services.historico_service import import_viajes_json, get_stats_historico, get_mapa_data
+from services.historico_service import import_viajes_json, get_stats_historico, get_mapa_data, get_ganancias_semanal
 
 router = APIRouter()
 
@@ -77,6 +77,16 @@ async def mapa_historico(conductor_id: str = Depends(get_conductor_id)):
     if not viajes:
         return {"viajes": [], "total": 0, "mensaje": "Sin datos geograficos. Importa tu historico de Uber."}
     return {"viajes": viajes, "total": len(viajes)}
+
+
+@router.get("/historico/semanal")
+async def semanal_historico(conductor_id: str = Depends(get_conductor_id)):
+    """
+    Retorna ingresos agrupados por día de la semana (últimos 90 días).
+    Usado por la gráfica de barras en la pantalla Ganancias.
+    """
+    dias = await get_ganancias_semanal(conductor_id)
+    return {"dias": dias, "conductor_id": conductor_id}
 
 
 @router.get("/historico/stats")

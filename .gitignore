@@ -45,3 +45,9 @@ secrets/
 mi-auth-nueva
 login.json
 login_response.json
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example

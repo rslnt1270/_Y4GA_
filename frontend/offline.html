@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!-- © YAGA Project — Todos los derechos reservados -->
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f1923" />
+  <title>YAGA — Sin conexión</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f1923;
+      color: #e8f0f7;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 2rem;
+      text-align: center;
+      gap: 1rem;
+    }
+    .logo { font-size: 2.5rem; font-weight: 800; color: #00e5a0; letter-spacing: -1px; }
+    h1 { font-size: 1.2rem; font-weight: 600; }
+    p { color: #6b8299; font-size: 0.9rem; max-width: 300px; line-height: 1.6; }
+    button {
+      background: #00e5a0;
+      color: #0f1923;
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.75rem;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+    button:active { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="logo">Y4GA</div>
+  <h1>Sin conexión</h1>
+  <p>No hay conexión con el servidor.<br>Verifica tu red e intenta de nuevo.</p>
+  <button onclick="location.reload()">Reintentar</button>
+</body>
+</html>

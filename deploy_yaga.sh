@@ -52,6 +52,14 @@ rsync -az --delete \
     -e "ssh -i $PEM -o StrictHostKeyChecking=no" \
     "$LOCAL_DIR/" "$EC2_HOST:$EC2_DIR/"
 
+# ── 1b. Sincronizar frontend estático a nginx webroot ─────────────────────────
+echo ""
+echo "[1b] Actualizando archivos estáticos de la PWA en nginx..."
+$SSH "$EC2_HOST" "sudo cp $EC2_DIR/frontend/index.html /var/www/yaga/yaga/index.html && \
+    sudo cp $EC2_DIR/frontend/sw.js /var/www/yaga/yaga/sw.js && \
+    sudo cp $EC2_DIR/frontend/offline.html /var/www/yaga/yaga/offline.html && \
+    echo '  ✓ Frontend actualizado'"
+
 # ── 2. Migración DB ───────────────────────────────────────────────────────────
 if [ "$SKIP_MIGRATION" = false ]; then
     echo ""

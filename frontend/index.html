@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>YAGA</title>
   <link rel="manifest" href="/yaga/manifest.json" />
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/yaga/sw.js', { scope: '/yaga/' }).catch(() => {});</script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -1209,7 +1210,7 @@
 
   <!-- AUTH SCREEN -->
   <div id="authScreen">
-    <button onclick="volverSelect()" class="auth-back" title="Volver al inicio">← Apps</button>
+    <button onclick="window.location.href='/'" class="auth-back" title="Volver al inicio">← Inicio</button>
     <div class="auth-logo">YAGA</div>
     <div class="auth-tagline">Co-piloto financiero para conductores</div>
     <div class="auth-card">
@@ -2466,7 +2467,7 @@
 
   // Check inicial síncrono — validarSesion() confirmará o revertirá después
   if (!getToken() || !getYaga("yaga_conductor_id")) {
-    mostrarSelect();
+    elegirYaga();
   }
 
   // ── IMPORT PANEL ─────────────────────────────────────────

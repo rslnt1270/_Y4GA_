@@ -33,9 +33,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "POST", "PUT"],
-    allow_headers=["*"],
+    allow_origins=["https://y4ga.app", "https://www.y4ga.app"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
+    allow_credentials=True,
+    max_age=600,
 )
 
 app.include_router(auth_router, prefix="/api/v1", tags=["Auth"])

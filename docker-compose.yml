@@ -1,3 +1,7 @@
+# © YAGA Project — Todos los derechos reservados
+# Labels app.kubernetes.io/* preparan migración a EKS sin cambios de código.
+# Para EKS: cada service → Deployment + Service + ConfigMap + Secret (ESO).
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -5,7 +9,8 @@ services:
     env_file: .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/00_schema.sql
+      - ./infrastructure/database/migrations:/docker-entrypoint-initdb.d/migrations
     ports:
       - "5432:5432"
     healthcheck:
@@ -14,10 +19,15 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    labels:
+      app.kubernetes.io/name: "postgres"
+      app.kubernetes.io/component: "database"
+      app.kubernetes.io/part-of: "yaga"
 
   redis:
     image: redis:7-alpine
     container_name: yaga_redis
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     healthcheck:
@@ -26,6 +36,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    labels:
+      app.kubernetes.io/name: "redis"
+      app.kubernetes.io/component: "cache"
+      app.kubernetes.io/part-of: "yaga"
 
   api:
     build: ./app
@@ -34,7 +48,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./secrets:/app/secrets
+      - ./secrets:/app/secrets:ro
     environment:
       - JWT_PRIVATE_KEY_FILE=/app/secrets/private.pem
       - JWT_PUBLIC_KEY_FILE=/app/secrets/public.pem
@@ -44,6 +58,20 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      app.kubernetes.io/name: "yaga-api"
+      app.kubernetes.io/component: "backend"
+      app.kubernetes.io/part-of: "yaga"
+      app.kubernetes.io/version: "0.5.0"
 
 volumes:
   postgres_data:
+    labels:
+      app.kubernetes.io/part-of: "yaga"
+      backup: "required"

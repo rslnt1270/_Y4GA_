@@ -1,6 +1,6 @@
+# © YAGA Project — Todos los derechos reservados
 """
-YAGA PROJECT - API Principal
-Copyright (c) 2026 YAGA Project
+YAGA PROJECT - API Principal v0.5.0
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
@@ -9,10 +9,11 @@ from api.v1.nlp import router as nlp_router
 from api.v1.vehiculo import router as vehiculo_router
 from api.v1.auth import router as auth_router
 from api.v1.historico import router as historico_router
+from api.v1.gps import router as gps_router
 from services.database import get_pool, close_pool
 from api.poleana_router import router as poleana_router
-from routers.auth import router as auth_router_new        # nuevo router JWT
-from routers.consentimientos import router as consentimientos_router  # nuevo router consentimientos
+from routers.auth import router as auth_router_new
+from routers.consentimientos import router as consentimientos_router
 
 
 @asynccontextmanager
@@ -24,8 +25,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="YAGA - Asistente para Conductores",
-    description="Registra tus viajes y gastos con comandos de voz",
-    version="0.4.0",
+    description="Registra tus viajes y gastos con comandos de voz. GPS tracking cifrado AES-256.",
+    version="0.5.0",
     docs_url="/api/docs",
     lifespan=lifespan,
 )
@@ -41,6 +42,7 @@ app.include_router(auth_router, prefix="/api/v1", tags=["Auth"])
 app.include_router(vehiculo_router, prefix="/api/v1", tags=["Vehículo"])
 app.include_router(nlp_router, prefix="/api/v1", tags=["Comandos"])
 app.include_router(historico_router, prefix="/api/v1", tags=["Historico"])
+app.include_router(gps_router, tags=["GPS"])
 app.include_router(poleana_router)
 app.include_router(auth_router_new)                     # autenticación JWT (/auth/...)
 app.include_router(consentimientos_router)              # gestión de consentimientos (/consentimientos)

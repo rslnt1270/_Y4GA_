@@ -1,83 +1,98 @@
 ---
 name: backend
-description: "Contexto profundo del backend FastAPI de YAGA: endpoints, modelos, servicios, cifrado, NLP, y patrones. Se activa automáticamente cuando el agente backend trabaja en app/."
+description: "Contexto profundo del backend FastAPI de YAGA: endpoints reales, asyncpg, HS256, NLP, cifrado, y patrones. Se activa automáticamente cuando el agente backend trabaja en app/."
 ---
 
-# Backend YAGA — Referencia Técnica
+# Backend YAGA — Referencia Técnica (actualizada abril 2026)
 
-## Estructura de archivos
+## Estructura REAL de archivos
 ```
 app/
 ├── api/v1/
-│   ├── auth.py           # POST login/register/refresh/logout
-│   ├── consentimientos.py # PUT gestión de finalidades
-│   ├── arco.py           # GET acceso, PUT rectificacion, POST cancelacion/oposicion
-│   ├── gps.py            # POST /gps/batch, POST /jornada/cerrar-v2
-│   ├── nlp.py            # POST /nlp/process (clasificador determinista)
-│   └── vehiculo.py       # CRUD mantenimiento vehicular
+│   ├── auth.py           # GET /auth/me · POST /login /register /forgot-password /reset-password
+│   ├── nlp.py            # POST /command · GET /resumen · GET /comparativa
+│   ├── gps.py            # POST /gps/batch
+│   ├── historico.py      # GET /historico (viajes_historicos)
+│   ├── vehiculo.py       # CRUD mantenimiento vehicular
+│   ├── poleana.py        # WebSocket juego de mesa
+│   └── nlp_router.py     # Router alternativo NLP (legacy)
 ├── services/
-│   ├── auth_service.py   # JWT generation, refresh rotation
-│   ├── gps_service.py    # Cifrado GPS, Haversine, bulk insert
-│   ├── nlp_service.py    # Clasificador 7 intents
-│   └── arco_service.py   # Anonimización, export JSON
-├── models/
-│   ├── usuario.py        # SQLAlchemy model con campos cifrados
-│   ├── viaje.py          # Incluye tipo_servicio, ganancia_real_calculada
-│   ├── jornada.py
-│   └── gps_log.py        # lat_cifrado/lng_cifrado BYTEA
+│   ├── auth_service.py   # hash_password, verify_password, create_token (HS256), decode_token
+│   ├── database.py       # get_pool() → asyncpg.Pool
+│   ├── jornada_service.py # get_resumen_jornada, registrar_viaje, registrar_gasto, get_comparativa
+│   ├── gps_service.py    # cifrado GPS, Haversine, bulk insert UNNEST
+│   ├── historico_service.py
+│   ├── vehiculo_service.py
+│   └── nlp/
+│       ├── classifier.py  # classify(text: str) → ClassificationResult
+│       └── intent_catalog.py # DriverIntent enum
 ├── core/
-│   ├── crypto.py         # AES-256-GCM: encrypt_pii(), decrypt_pii(), encrypt_value()
-│   ├── config.py         # Settings con Pydantic BaseSettings
-│   └── deps.py           # get_db(), get_current_user()
-└── main.py               # FastAPI app con CORS, middleware
+│   ├── crypto.py         # encrypt_value(plaintext) → bytes · decrypt_value(ciphertext) → str
+│   ├── config.py         # Settings Pydantic
+│   └── auth.py           # ⚠️ LEGACY RS256 — no usar en endpoints nuevos
+├── models/
+│   └── usuario.py        # asyncpg Record wrapper
+├── dependencies.py       # get_current_user() → usa auth_service.decode_token() [HS256]
+└── main.py
 ```
 
-## Patrones de código
-
-### Endpoint tipo
+## Auth — Sistema A (HS256) es el ÚNICO activo
 ```python
-@router.post("/gps/batch", response_model=GpsBatchResponse)
-async def gps_batch(
-    data: GpsBatchRequest,
-    current_user: Usuario = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    # 1. Validar ownership: jornada pertenece al usuario
-    # 2. Filtrar teleportación (>300 km/h)
-    # 3. Cifrar lat/lng con encrypt_value()
-    # 4. Bulk insert con UNNEST
-    # 5. Registrar en auditoría
+# dependencies.py — correcto desde abril 2026
+from services.auth_service import decode_token
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
+    try:
+        payload = decode_token(token)  # HS256 — compatible con frontend
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+    ...
 ```
 
-### Cifrado PII
+## Patrón de endpoint (asyncpg)
 ```python
-from app.core.crypto import encrypt_pii, decrypt_pii
-# Cifrar ANTES de escribir a DB
-email_cifrado = encrypt_pii(email_plano)
-# Descifrar DESPUÉS de leer de DB
-email_plano = decrypt_pii(email_cifrado)
-# IV es único por registro (12 bytes random)
-# Tag de autenticación: 16 bytes
+@router.post("/command")
+async def process_command(body: CommandRequest, current_user=Depends(get_current_user), pool=Depends(get_pool)):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT id FROM jornadas WHERE conductor_id=$1", str(current_user.id))
+    ...
 ```
 
-### NLP Engine — 7 intents
+## NLP — 7 intents reales
 ```
-registrar_viaje    → monto, plataforma, metodo_pago, propina
-registrar_gasto    → monto, categoria_gasto
-iniciar_jornada    → (sin entidades, dispara GPS start)
-cerrar_jornada     → (sin entidades, dispara GPS stop + resumen)
-consultar_resumen  → (sin entidades)
-consultar_total    → (sin entidades)
-unknown            → fallback
+REGISTRAR_VIAJE    → monto, plataforma, metodo_pago, propina
+REGISTRAR_GASTO    → monto, categoria
+INICIAR_JORNADA
+CERRAR_JORNADA     → get_comparativa() + cerrar_jornada()
+CONSULTAR_RESUMEN  → get_resumen_jornada()
+CONSULTAR_TOTAL
+UNKNOWN            → fallback con sugerencia
 ```
-Latencia requerida: <200ms. Sin LLM. Keywords + regex en español MX con slang.
+Ejemplo de comando: `"viaje uber efectivo 90"` → REGISTRAR_VIAJE, monto=90, plataforma=uber, metodo=efectivo
 
-## Endpoints GPS (Sprint 3)
-- `POST /api/v1/gps/batch`: arrays de hasta 500 puntos, cifrado server-side
-- `POST /api/v1/jornada/cerrar-v2`: cierra jornada + calcula distancia Haversine + ganancia_real
+## Forgot Password Flow
+```python
+# POST /auth/forgot-password
+reset_token = secrets.token_urlsafe(32)
+await redis.setex(f"reset:{reset_token}", 3600, conductor_id)
+# Si SMTP configurado → enviar email; si no → retornar reset_url (modo dev)
+
+# POST /auth/reset-password
+conductor_id = await redis.get(f"reset:{token}")
+await redis.delete(f"reset:{token}")  # un solo uso
+nuevo_hash = hash_password(nueva_password)
+```
 
 ## Anti-patterns (NO hacer)
+- ❌ `verify_token` de `core/auth.py` en nuevos endpoints
+- ❌ `pgp_sym_encrypt` en SQL — usar `encrypt_value()` de `core/crypto`
 - ❌ Aceptar `ganancia_real_calculada` del cliente
-- ❌ `pgp_sym_encrypt` en SQL
 - ❌ Loops Python para bulk insert (usar UNNEST)
-- ❌ Almacenar JWT en response body para localStorage
+- ❌ Almacenar JWT en response para localStorage
+
+## Caso real: 401 en cascada (abril 2026)
+```
+Problema: dependencies.py usaba verify_token (RS256) pero tokens son HS256
+Fix: cambiar import a decode_token de services/auth_service
+Impacto: 52+ requests fallando, NLP inaccesible, sin registro de viajes
+```

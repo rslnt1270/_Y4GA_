@@ -12,8 +12,11 @@ from api.v1.historico import router as historico_router
 from api.v1.gps import router as gps_router
 from services.database import get_pool, close_pool
 from api.poleana_router import router as poleana_router
-from routers.auth import router as auth_router_new
-from routers.consentimientos import router as consentimientos_router
+from dependencies import get_current_user
+# TODO: Sistema B (RS256) deshabilitado — usa pgp_sym_encrypt (prohibido) y SQLAlchemy sync.
+#       Reactivar solo tras migrar a app.core.crypto + asyncpg.
+# from routers.auth import router as auth_router_new
+# from routers.consentimientos import router as consentimientos_router
 
 
 @asynccontextmanager
@@ -46,8 +49,9 @@ app.include_router(nlp_router, prefix="/api/v1", tags=["Comandos"])
 app.include_router(historico_router, prefix="/api/v1", tags=["Historico"])
 app.include_router(gps_router, tags=["GPS"])
 app.include_router(poleana_router)
-app.include_router(auth_router_new)                     # autenticación JWT (/auth/...)
-app.include_router(consentimientos_router)              # gestión de consentimientos (/consentimientos)
+# TODO: Sistema B deshabilitado por vulnerabilidad — ver Fix 6.1
+# app.include_router(auth_router_new)                     # autenticación JWT (/auth/...)
+# app.include_router(consentimientos_router)              # gestión de consentimientos (/consentimientos)
 
 
 @app.get("/health", tags=["Health"])
@@ -56,37 +60,38 @@ async def health():
 
 
 @app.post("/api/v1/jornada/cerrar", tags=["Operación"])
-async def cerrar_jornada(pool=Depends(get_pool)):
+async def cerrar_jornada(current_user=Depends(get_current_user), pool=Depends(get_pool)):
+    """Cierra la jornada activa del conductor autenticado."""
     async with pool.acquire() as conn:
         query_update = """
             UPDATE jornadas
             SET estado = 'cerrada', fin = NOW()
-            WHERE fecha = CURRENT_DATE AND estado = 'activa'
+            WHERE fecha = CURRENT_DATE AND estado = 'activa' AND conductor_id = $1
             RETURNING id;
         """
-        jornada = await conn.fetchrow(query_update)
-
+        jornada = await conn.fetchrow(query_update, str(current_user.id))
         if not jornada:
             raise HTTPException(status_code=400, detail="No hay una jornada abierta para cerrar hoy.")
 
-        query_stats = """
-            SELECT
-                COUNT(v.id) as total_viajes,
-                COALESCE(SUM(v.monto), 0) as total_ingresos,
-                (SELECT COALESCE(SUM(monto), 0) FROM gastos WHERE jornada_id = $1) as total_gastos
-            FROM viajes v
-            WHERE v.jornada_id = $1;
-        """
-        stats = await conn.fetchrow(query_stats, jornada['id'])
+        stats = await conn.fetchrow("""
+            SELECT COUNT(v.id) as total_viajes,
+                   COALESCE(SUM(v.monto), 0) as total_ingresos,
+                   (SELECT COALESCE(SUM(monto), 0) FROM gastos WHERE jornada_id = $1) as total_gastos
+            FROM viajes v WHERE v.jornada_id = $1;
+        """, jornada['id'])
+
+        # Promedio histórico real del conductor (no hardcodeado)
+        hist_ref = await conn.fetchval(
+            "SELECT COALESCE(AVG(monto_bruto), 72.94) FROM viajes_historicos WHERE conductor_id = $1",
+            str(current_user.id)
+        )
 
         ingresos = float(stats['total_ingresos'])
         gastos = float(stats['total_gastos'])
         viajes = stats['total_viajes']
         utilidad = ingresos - gastos
         promedio_hoy = ingresos / viajes if viajes > 0 else 0
-
-        HISTORICO_REF = 72.94
-        delta = ((promedio_hoy - HISTORICO_REF) / HISTORICO_REF) * 100
+        delta = ((promedio_hoy - hist_ref) / hist_ref * 100) if hist_ref else 0
 
         return {
             "status": "Jornada Cerrada",
@@ -97,6 +102,6 @@ async def cerrar_jornada(pool=Depends(get_pool)):
             },
             "rendimiento_vs_historico": {
                 "delta_pct": f"{delta:+.1f}%",
-                "mensaje": "Dia por encima del promedio" if delta > 0 else "Hoy estuviste bajo el promedio historico."
+                "mensaje": "Día por encima del promedio" if delta > 0 else "Hoy estuviste bajo tu promedio histórico."
             }
         }

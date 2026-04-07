@@ -91,5 +91,5 @@ async def get_resumen(current_user: Usuario = Depends(get_current_user)):
     return await get_resumen_jornada(str(current_user.id))
 
 @router.get("/comparativa")
-async def get_comparativa(current_user: Usuario = Depends(get_current_user)):
+async def comparativa_endpoint(current_user: Usuario = Depends(get_current_user)):
     return await get_comparativa(str(current_user.id))

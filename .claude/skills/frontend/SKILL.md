@@ -1,76 +1,102 @@
 ---
 name: frontend
-description: "Contexto profundo del frontend PWA de YAGA: dashboard cockpit, GPS tracking, consentimientos, offline-first, y patrones React/TS."
+description: "Contexto profundo del frontend YAGA: HTML monolítico, JS vanilla, auth en memoria, service worker, y flujos de UI reales."
 ---
 
-# Frontend YAGA — Referencia Técnica
+# Frontend YAGA — Referencia Técnica (actualizada abril 2026)
 
-## Estructura
-```
-frontend/
-├── src/
-│   ├── components/
-│   │   ├── Dashboard/     # Cockpit principal
-│   │   ├── Auth/          # Login, registro
-│   │   ├── ARCO/          # Acceso, rectificación, cancelación
-│   │   └── GPS/           # GpsDashboard.js
-│   ├── hooks/
-│   │   ├── useAuth.ts     # JWT en memoria, refresh automático
-│   │   └── useGps.ts      # Geolocation wrapper
-│   ├── store/             # Zustand stores
-│   ├── services/          # API calls
-│   └── App.tsx
-├── public/
-│   ├── manifest.json      # PWA manifest
-│   └── sw.js              # Service worker offline
-└── vite.config.ts
-```
+## Realidad del stack
+- `frontend/index.html` — SPA monolítico ~2,650 líneas (HTML + CSS inline + JS vanilla)
+- **No hay React, TypeScript, ni Vite** en la versión actual de producción
+- Service worker: `frontend/sw.js` — network-first para API, cache-first para shell
+- Web Speech API: `SpeechRecognition` (Chrome/Edge) o `webkitSpeechRecognition`
 
-## Dashboard cockpit — principios
-- **Periférico**: el conductor MIRA el tablero, no lo OPERA. Info visible en <1s
-- **Alto contraste**: fondo oscuro, texto blanco/verde, alertas en rojo
-- **Touch targets**: mínimo 48×48px, separación 8px
-- **Sin scroll**: toda la info crítica en viewport sin scrollear
-- **Modo noche automático**: reduce brillo blue-light después de 20:00
-
-## GPS Dashboard (GpsDashboard.js)
+## Variables globales clave
 ```javascript
-// Parámetros anti-drenaje
-const GPS_CONFIG = {
-    enableHighAccuracy: false,  // 3× menos batería
-    maximumAge: 10000,          // Reutiliza caché 10s
-    timeout: 15000
-};
-const THROTTLE_MS = 5000;       // 1 punto cada 5s
-const FLUSH_INTERVAL = 30000;   // Batch cada 30s
-const IDLE_THRESHOLD = 60000;   // Pausa si <2 km/h por 60s
+let _authToken = null;       // JWT en memoria — null en page load
+let resumenInterval = null;  // referencia al polling de /resumen (cancelable)
+let CONDUCTOR_ID;            // UUID conductor (sessionStorage/localStorage)
+const API = '/api/v1';       // base URL del backend
 ```
 
-## Auth flow
-1. Login → recibe `access_token` (15min) + `refresh_token` (HttpOnly cookie, 7 días)
-2. `access_token` se guarda en variable Zustand (NUNCA localStorage)
-3. Interceptor Axios: si 401 → auto-refresh vía cookie → retry
-4. Logout → POST /auth/logout → limpia store + cookie
+## Auth flow (post-fix abril 2026)
+```javascript
+// Token NUNCA en storage — solo en memoria
+function getToken() { return _authToken; }
 
-## Pantallas ARCO
-- **Acceso**: botón "Descargar mis datos" → JSON download
-- **Rectificación**: formulario email/phone con doble confirmación
-- **Cancelación**: modal con warning "Tus datos transaccionales se conservan 7 años por ley fiscal"
-- **Oposición**: toggles para marketing/investigación
+function saveSession(token, conductorId, nombre, email, remember) {
+    _authToken = token;  // memoria
+    var store = remember ? localStorage : sessionStorage;
+    store.setItem('yaga_conductor_id', conductorId);
+    store.setItem('yaga_nombre', nombre);
+    store.setItem('yaga_email', email);
+}
 
-## Consentimientos
-- Finalidad `operacion`: toggle deshabilitado (obligatoria)
-- Finalidad `marketing`: toggle activo, default OFF
-- Finalidad `investigacion`: toggle activo, default OFF
+function clearSession() {
+    _authToken = null;
+    // limpiar datos no-sensibles del storage
+    ['yaga_conductor_id','yaga_nombre','yaga_email'].forEach(k => {
+        localStorage.removeItem(k);
+        sessionStorage.removeItem(k);
+    });
+}
+```
 
-## Offline-first
-- Service worker cachea shell + última jornada
-- Comandos de voz se encolan en IndexedDB si no hay red
-- Al recuperar conexión: flush queue → sync con server
-- GPS points se bufferizan local y se envían en batch
+## Polling de /resumen — manejo correcto de 401
+```javascript
+let resumenInterval = null;
 
-## Anti-patterns
-- ❌ localStorage para tokens
-- ❌ `any` en TypeScript
-- ❌ Inline styles (usar Tailwind classes)
-- ❌ `console.log` en producción (usar logger service)
+async function fetchResumen() {
+    const token = getToken();
+    if (!token) return;  // sin token, no hacer request
+    const res = await fetch(`${API}/resumen`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (res.status === 401) {
+        clearInterval(resumenInterval);  // detener polling
+        clearSession();
+        $('authScreen').classList.remove('hidden');
+        return;
+    }
+    // ... renderizar
+}
+
+// En INIT:
+resumenInterval = setInterval(fetchResumen, 30000);
+```
+
+## Comando de voz → NLP
+```javascript
+recognition.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    sendCommand(transcript);  // POST /api/v1/command
+};
+// Firefox: SpeechRecognition no disponible → mostrar banner
+```
+
+## Forgot Password UI (implementado abril 2026)
+```
+formLogin → link "¿Olvidaste tu contraseña?" → mostrarForgot()
+formForgot → input email → doForgot() → POST /auth/forgot-password
+  → si SMTP no configurado: mostrar reset_url (modo dev/admin)
+formReset → activado cuando URL tiene ?reset_token=...
+  → doReset() → POST /auth/reset-password → login automático
+```
+
+## Service Worker — comportamiento real
+- `sw.js:75` aparece como initiator en Network tab → es interceptor, no retry
+- Si la red falla (catch) → devuelve `{offline: true}` con status 503
+- Si el server responde 401 → SW lo pasa al cliente sin reintentar
+- El loop de requests venía del `setInterval` sin manejo de error (corregido)
+
+## Deploy
+```bash
+# Estático — SCP directo, disponible inmediatamente
+scp -i yaga_backend.pem frontend/index.html ec2-user@EC2:~/yaga-project/frontend/index.html
+```
+
+## Anti-patterns (NO hacer)
+- ❌ localStorage/sessionStorage para JWT
+- ❌ `innerHTML` sin sanitizar datos de API (XSS)
+- ❌ `setInterval` sin referencia (no se puede cancelar con clearInterval)
+- ❌ Llamar `fetchResumen()` sin verificar que `getToken()` no sea null

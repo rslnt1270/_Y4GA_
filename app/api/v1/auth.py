@@ -2,7 +2,7 @@
 """
 api/v1/auth.py — Autenticación de conductores.
 
-Tabla: usuarios (email, password_hash, nombre, telefono, roles…)
+Tabla: usuarios (email, password_hash, nombre, roles…)
 Cifrado: email_cifrado y phone_cifrado vía core.crypto (AES-256-GCM).
 Respuesta: {token, conductor_id, nombre} — compatible con la PWA actual.
 """
@@ -10,12 +10,56 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from jose import JWTError
+import secrets
+import smtplib
+import os
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from services.database import get_pool
 from services.auth_service import hash_password, verify_password, create_token, decode_token
 from core.crypto import encrypt_value
 
 router = APIRouter()
+
+# ── Config email ──────────────────────────────────────────────────────────────
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASS = os.getenv("SMTP_PASS", "")
+APP_URL   = os.getenv("APP_URL", "https://y4ga.app")
+
+def _send_reset_email(to_email: str, nombre: str, token: str) -> bool:
+    """Envía email de recuperación. Retorna False si SMTP no está configurado."""
+    if not all([SMTP_HOST, SMTP_USER, SMTP_PASS]):
+        return False
+    reset_url = f"{APP_URL}/yaga/?reset_token={token}"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Recupera tu contraseña — YAGA"
+    msg["From"]    = f"YAGA App <{SMTP_USER}>"
+    msg["To"]      = to_email
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:auto">
+      <h2 style="color:#00ff88">Hola {nombre or 'conductor'} 👋</h2>
+      <p>Recibimos una solicitud para restablecer tu contraseña en YAGA.</p>
+      <a href="{reset_url}" style="display:inline-block;background:#00ff88;color:#0a0a0a;
+         padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0">
+        Restablecer contraseña
+      </a>
+      <p style="color:#888;font-size:.85rem">
+        Este enlace expira en <strong>1 hora</strong>.<br>
+        Si no solicitaste esto, ignora este mensaje.
+      </p>
+    </div>"""
+    msg.attach(MIMEText(html, "html"))
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
+            s.starttls()
+            s.login(SMTP_USER, SMTP_PASS)
+            s.sendmail(SMTP_USER, to_email, msg.as_string())
+        return True
+    except Exception:
+        return False
 
 
 class RegistroBody(BaseModel):
@@ -131,6 +175,92 @@ async def login(body: LoginBody, pool=Depends(get_pool)):
     token = create_token(str(row["id"]), body.email.lower().strip())
     return {
         "token": token,
+        "conductor_id": str(row["id"]),
+        "nombre": row["nombre"],
+    }
+
+
+# ── /auth/forgot-password ─────────────────────────────────────────────────────
+
+class ForgotBody(BaseModel):
+    email: str
+
+
+@router.post("/auth/forgot-password")
+async def forgot_password(body: ForgotBody, pool=Depends(get_pool)):
+    """Genera token de recuperación (Redis TTL 1h) y envía email si SMTP está configurado."""
+    import redis.asyncio as aioredis
+    email_norm = body.email.lower().strip()
+
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, nombre FROM usuarios WHERE email = $1 AND deleted_at IS NULL",
+            email_norm,
+        )
+
+    # Respuesta genérica siempre — no revelar si el email existe
+    if not row:
+        return {"message": "Si el email está registrado, recibirás instrucciones en breve."}
+
+    reset_token = secrets.token_urlsafe(32)
+    r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
+    try:
+        await r.setex(f"reset:{reset_token}", 3600, str(row["id"]))
+    finally:
+        await r.aclose()
+
+    email_sent = _send_reset_email(email_norm, row["nombre"] or "", reset_token)
+
+    # Si no hay SMTP, exponer el token para uso admin/dev
+    if not email_sent:
+        reset_url = f"{APP_URL}/yaga/?reset_token={reset_token}"
+        return {
+            "message": "SMTP no configurado. Usa el enlace de administrador.",
+            "reset_url": reset_url,
+        }
+
+    return {"message": "Si el email está registrado, recibirás instrucciones en breve."}
+
+
+# ── /auth/reset-password ──────────────────────────────────────────────────────
+
+class ResetBody(BaseModel):
+    token: str
+    nueva_password: str
+
+
+@router.post("/auth/reset-password")
+async def reset_password(body: ResetBody, pool=Depends(get_pool)):
+    """Valida el token de Redis y actualiza la contraseña."""
+    import redis.asyncio as aioredis
+
+    if len(body.nueva_password) < 6:
+        raise HTTPException(status_code=422, detail="La contraseña debe tener al menos 6 caracteres")
+
+    r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
+    try:
+        conductor_id = await r.get(f"reset:{body.token}")
+        if not conductor_id:
+            raise HTTPException(status_code=400, detail="Token inválido o expirado")
+        conductor_id = conductor_id.decode()
+        await r.delete(f"reset:{body.token}")  # token de un solo uso
+    finally:
+        await r.aclose()
+
+    nuevo_hash = hash_password(body.nueva_password)
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "UPDATE usuarios SET password_hash = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING id, nombre, email",
+            nuevo_hash, conductor_id,
+        )
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    token_jwt = create_token(str(row["id"]), row["email"])
+    return {
+        "message": "Contraseña actualizada correctamente",
+        "token": token_jwt,
         "conductor_id": str(row["id"]),
         "nombre": row["nombre"],
     }

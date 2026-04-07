@@ -1237,6 +1237,49 @@
         </label>
         <div class="auth-error" id="loginError"></div>
         <button class="btn-auth" id="btnLogin" onclick="doLogin()">Entrar</button>
+        <p style="text-align:center;margin-top:10px;font-size:.82rem">
+          <a href="#" onclick="mostrarForgot(event)"
+             style="color:var(--muted);text-decoration:none">¿Olvidaste tu contraseña?</a>
+        </p>
+      </div>
+
+      <!-- RECUPERAR CONTRASEÑA -->
+      <div class="auth-form" id="formForgot" style="display:none">
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px">
+          Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
+        </p>
+        <div class="auth-field">
+          <label>Email</label>
+          <input id="forgotEmail" type="email" placeholder="tu@email.com"
+                 onkeydown="if(event.key==='Enter') doForgot()" />
+        </div>
+        <div class="auth-error" id="forgotError"></div>
+        <div id="forgotSuccess" style="display:none;background:rgba(0,255,136,.1);border:1px solid var(--accent);
+             border-radius:8px;padding:10px 14px;font-size:.85rem;color:var(--accent);margin-bottom:8px"></div>
+        <button class="btn-auth" id="btnForgot" onclick="doForgot()">Enviar enlace</button>
+        <p style="text-align:center;margin-top:10px;font-size:.82rem">
+          <a href="#" onclick="volverLogin(event)"
+             style="color:var(--muted);text-decoration:none">← Volver al inicio de sesión</a>
+        </p>
+      </div>
+
+      <!-- RESTABLECER CONTRASEÑA (cuando llega con ?reset_token=...) -->
+      <div class="auth-form" id="formReset" style="display:none">
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px">
+          Elige una nueva contraseña para tu cuenta.
+        </p>
+        <div class="auth-field">
+          <label>Nueva contraseña</label>
+          <input id="resetPass" type="password" placeholder="Mínimo 6 caracteres"
+                 onkeydown="if(event.key==='Enter') doReset()" />
+        </div>
+        <div class="auth-field">
+          <label>Confirmar contraseña</label>
+          <input id="resetPass2" type="password" placeholder="Repite la contraseña"
+                 onkeydown="if(event.key==='Enter') doReset()" />
+        </div>
+        <div class="auth-error" id="resetError"></div>
+        <button class="btn-auth" id="btnReset" onclick="doReset()">Restablecer contraseña</button>
       </div>
 
       <!-- REGISTRO -->
@@ -1701,25 +1744,35 @@
     document.getElementById('selectScreen').classList.remove('hidden');
   }
 
-  // ── Helpers de sesión (localStorage = recordar / sessionStorage = solo esta sesión) ──
+  // ── Helpers de sesión (token en memoria — no persiste en storage) ──
+  let _authToken = null; // JWT en variable de módulo. Nunca en localStorage/sessionStorage.
+
   function getToken() {
-    return localStorage.getItem('yaga_token') || sessionStorage.getItem('yaga_token');
+    return _authToken;
   }
   function getYaga(key) {
     return localStorage.getItem(key) || sessionStorage.getItem(key);
   }
   function saveSession(token, conductorId, nombre, email, remember) {
+    _authToken = token; // solo en memoria
     var store = remember ? localStorage : sessionStorage;
-    store.setItem('yaga_token', token);
+    // Token no se persiste. Solo datos no sensibles.
     store.setItem('yaga_conductor_id', conductorId);
     store.setItem('yaga_nombre', nombre);
     store.setItem('yaga_email', email);
+    // Eliminar token si quedó de versiones anteriores
+    localStorage.removeItem('yaga_token');
+    sessionStorage.removeItem('yaga_token');
   }
   function clearSession() {
-    ['yaga_token','yaga_conductor_id','yaga_nombre','yaga_email'].forEach(function(k) {
+    _authToken = null;
+    ['yaga_conductor_id','yaga_nombre','yaga_email'].forEach(function(k) {
       localStorage.removeItem(k);
       sessionStorage.removeItem(k);
     });
+    // Limpiar token legado si existe
+    localStorage.removeItem('yaga_token');
+    sessionStorage.removeItem('yaga_token');
   }
 
   let CONDUCTOR_ID = getYaga('yaga_conductor_id') || 'default';
@@ -1805,8 +1858,18 @@
 
   // ── FETCH RESUMEN ────────────────────────────────────────
   async function fetchResumen() {
+    const token = getToken();
+    if (!token) return; // sin token, no hacer request
     try {
-      const res = await fetch(`${API}/resumen?conductor_id=${CONDUCTOR_ID}`);
+      const res = await fetch(`${API}/resumen`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (res.status === 401) {
+        clearInterval(resumenInterval);
+        clearSession();
+        $('authScreen').classList.remove('hidden');
+        return;
+      }
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       renderResumen(data);
@@ -1828,7 +1891,10 @@
     try {
       const res = await fetch(`${API}/command`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        },
         body: JSON.stringify({ text, conductor_id: CONDUCTOR_ID }),
       });
       const data = await res.json();
@@ -2359,8 +2425,10 @@
   }
 
   // ── VALIDACION DE TOKEN AL ARRANQUE ──────────────────────
+  // Con JWT en memoria, al recargar la página el token siempre es null.
+  // El usuario debe hacer login nuevamente (comportamiento seguro).
   async function validarSesion() {
-    const token = getToken();
+    const token = getToken(); // null en page load
     const conductorId = getYaga('yaga_conductor_id');
     if (!token || !conductorId) {
       elegirYaga();
@@ -2371,14 +2439,15 @@
         headers: { 'Authorization': 'Bearer ' + token }
       });
       if (!res.ok) {
-        // Token expirado o invalido — limpiar sesion
+        // Token expirado o invalido — limpiar sesion y detener polling
+        clearInterval(resumenInterval);
         clearSession();
         $('authScreen').classList.remove('hidden');
         return;
       }
       const data = await res.json();
       // Actualizar datos frescos (preservar en el storage que ya estaba en uso)
-      var store = localStorage.getItem('yaga_token') ? localStorage : sessionStorage;
+      var store = localStorage.getItem('yaga_conductor_id') ? localStorage : sessionStorage;
       store.setItem('yaga_nombre', data.nombre);
       store.setItem('yaga_email', data.email);
       CONDUCTOR_ID = data.conductor_id;
@@ -2394,8 +2463,9 @@
   }
 
   // ── INIT ─────────────────────────────────────────────────
+  let resumenInterval = null;
   validarSesion();
-  setInterval(fetchResumen, 30000); // refresca cada 30s
+  resumenInterval = setInterval(fetchResumen, 30000); // refresca cada 30s
 
   // ── AUTH ─────────────────────────────────────────────────
   function authTab(tab) {
@@ -2465,8 +2535,94 @@
     finally { btn.disabled = false; btn.textContent = "Crear cuenta"; }
   }
 
+  // ── FORGOT / RESET PASSWORD ──────────────────────────────────────────────────
+  function mostrarForgot(e) {
+    e.preventDefault();
+    document.getElementById("formLogin").style.display = "none";
+    document.getElementById("formForgot").style.display = "block";
+    document.getElementById("formForgot").classList.add("active");
+    document.getElementById("forgotEmail").value = document.getElementById("loginEmail").value || "";
+    document.getElementById("forgotError").textContent = "";
+    document.getElementById("forgotSuccess").style.display = "none";
+  }
+  function volverLogin(e) {
+    e.preventDefault();
+    document.getElementById("formForgot").style.display = "none";
+    document.getElementById("formForgot").classList.remove("active");
+    document.getElementById("formLogin").style.display = "block";
+  }
+  async function doForgot() {
+    var email = document.getElementById("forgotEmail").value.trim();
+    if (!email) { setAuthError("forgotError", "Ingresa tu email"); return; }
+    var btn = document.getElementById("btnForgot");
+    btn.disabled = true; btn.textContent = "Enviando…";
+    var errEl = document.getElementById("forgotError");
+    var okEl  = document.getElementById("forgotSuccess");
+    errEl.textContent = ""; okEl.style.display = "none";
+    try {
+      var res  = await fetch("/api/v1/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email })
+      });
+      var data = await res.json();
+      okEl.textContent = data.message;
+      okEl.style.display = "block";
+      // Modo dev/admin: mostrar enlace directo si SMTP no está configurado
+      if (data.reset_url) {
+        okEl.textContent = data.message;
+        var link = document.createElement('a');
+        link.href = data.reset_url;
+        link.textContent = 'Usar enlace directo →';
+        link.style.color = 'var(--accent)';
+        link.style.display = 'block';
+        link.style.marginTop = '8px';
+        okEl.appendChild(document.createElement('br'));
+        okEl.appendChild(link);
+      }
+    } catch(e) { setAuthError("forgotError", "Sin conexión"); }
+    finally { btn.disabled = false; btn.textContent = "Enviar enlace"; }
+  }
+  async function doReset() {
+    var pass  = document.getElementById("resetPass").value;
+    var pass2 = document.getElementById("resetPass2").value;
+    var token = new URLSearchParams(window.location.search).get("reset_token");
+    if (!token) { setAuthError("resetError", "Token inválido"); return; }
+    if (pass.length < 6)  { setAuthError("resetError", "Mínimo 6 caracteres"); return; }
+    if (pass !== pass2)   { setAuthError("resetError", "Las contraseñas no coinciden"); return; }
+    var btn = document.getElementById("btnReset");
+    btn.disabled = true; btn.textContent = "Actualizando…";
+    try {
+      var res  = await fetch("/api/v1/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token, nueva_password: pass })
+      });
+      var data = await res.json();
+      if (!res.ok) { setAuthError("resetError", data.detail || "Error"); return; }
+      // Login automático con el token devuelto
+      saveSession(data.token, data.conductor_id, data.nombre, "", false);
+      CONDUCTOR_ID = data.conductor_id;
+      // Limpiar reset_token de la URL sin recargar
+      window.history.replaceState({}, "", window.location.pathname);
+      document.getElementById("authScreen").classList.add("hidden");
+      initUserMenu();
+      fetchResumen();
+      showToast("Contraseña actualizada. Bienvenido de vuelta 🎉", "success");
+    } catch(e) { setAuthError("resetError", "Sin conexión"); }
+    finally { btn.disabled = false; btn.textContent = "Restablecer contraseña"; }
+  }
+
   // Check inicial síncrono — validarSesion() confirmará o revertirá después
-  if (!getToken() || !getYaga("yaga_conductor_id")) {
+  var _resetToken = new URLSearchParams(window.location.search).get("reset_token");
+  if (_resetToken) {
+    // Mostrar formulario de restablecimiento directamente
+    document.getElementById("authScreen").classList.remove("hidden");
+    document.querySelectorAll(".auth-form").forEach(function(f) { f.style.display="none"; f.classList.remove("active"); });
+    document.querySelectorAll(".auth-tab").forEach(function(t) { t.style.display="none"; });
+    document.getElementById("formReset").style.display = "block";
+    document.getElementById("formReset").classList.add("active");
+  } else if (!getToken() || !getYaga("yaga_conductor_id")) {
     elegirYaga();
   }
 

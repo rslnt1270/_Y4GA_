@@ -1,0 +1,29 @@
+-- © YAGA Project — Todos los derechos reservados
+-- ============================================================
+-- Seed 001: Documentación de finalidades base del sistema YAGA
+-- ============================================================
+--
+-- Las finalidades se crean en el flujo de registro del usuario,
+-- NO se insertan aquí directamente. Este archivo documenta el catálogo.
+--
+-- ┌──────────────┬─────────────┬──────────────────────────────────────────┐
+-- │ finalidad    │ obligatoria │ descripción                              │
+-- ├──────────────┼─────────────┼──────────────────────────────────────────┤
+-- │ operacion    │ SÍ          │ Cuentas, pagos, KYC, fiscal.             │
+-- │              │             │ No revocable — requerida para el servicio│
+-- ├──────────────┼─────────────┼──────────────────────────────────────────┤
+-- │ marketing    │ NO          │ Promociones y comunicaciones.            │
+-- │              │             │ Opt-out vía ARCO oposición               │
+-- ├──────────────┼─────────────┼──────────────────────────────────────────┤
+-- │ investigacion│ NO          │ Análisis agregado, mejora de servicio.   │
+-- │              │             │ Opt-out vía ARCO oposición               │
+-- └──────────────┴─────────────┴──────────────────────────────────────────┘
+--
+-- Ejemplo de INSERT (referencia, no ejecutar automáticamente):
+--
+-- INSERT INTO consentimientos (usuario_id, finalidad, estado, es_obligatorio, fecha_otorgamiento)
+-- VALUES
+--   ($1, 'operacion',     TRUE,  TRUE,  NOW()),
+--   ($1, 'marketing',     FALSE, FALSE, NOW()),
+--   ($1, 'investigacion', FALSE, FALSE, NOW())
+-- ON CONFLICT ON CONSTRAINT unique_usuario_finalidad DO NOTHING;

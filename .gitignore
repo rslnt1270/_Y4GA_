@@ -1,7 +1,6 @@
 
 __pycache__/
 *.pyc
-.env
 .DS_Store
 
 # Ignorar archivos PDF de Uber por privacidad
@@ -21,8 +20,15 @@ gs_session.json
 Local State
 Last Version
 
-# Claves SSH
+# Claves SSH y certificados
 *.pem
+*.key
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+yaga-backend/.env
 
 # Datos sensibles
 *.xlsx
@@ -39,8 +45,7 @@ YAGA_Libro_Mayor_*.csv
 # Archivos generados (no fuente)
 data_science/geocode_cache.json
 data_science/YAGA_Mapa_Historico.html
-=======
-.env
+# Secretos y archivos temporales
 secrets/
 mi-auth-nueva
 login.json

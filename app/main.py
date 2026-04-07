@@ -10,19 +10,23 @@ from api.v1.vehiculo import router as vehiculo_router
 from api.v1.auth import router as auth_router
 from api.v1.historico import router as historico_router
 from api.v1.gps import router as gps_router
+from api.v1.arco import router as arco_router
 from services.database import get_pool, close_pool
 from api.poleana_router import router as poleana_router
+from api.poleana_redis_rooms import close_redis as close_poleana_redis
 from dependencies import get_current_user
-# TODO: Sistema B (RS256) deshabilitado — usa pgp_sym_encrypt (prohibido) y SQLAlchemy sync.
-#       Reactivar solo tras migrar a app.core.crypto + asyncpg.
-# from routers.auth import router as auth_router_new
-# from routers.consentimientos import router as consentimientos_router
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from core.rate_limit import limiter
+# Sistema B (RS256) movido a app/legacy/ — ver auth_sistema_b.py, core_auth_sistema_b.py
+# Archivos legacy NO deben importarse. Funcionalidad ARCO reimplementada en api/v1/arco.py
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await get_pool()
     yield
+    await close_poleana_redis()
     await close_pool()
 
 
@@ -33,6 +37,9 @@ app = FastAPI(
     docs_url="/api/docs",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,10 +55,9 @@ app.include_router(vehiculo_router, prefix="/api/v1", tags=["Vehículo"])
 app.include_router(nlp_router, prefix="/api/v1", tags=["Comandos"])
 app.include_router(historico_router, prefix="/api/v1", tags=["Historico"])
 app.include_router(gps_router, tags=["GPS"])
+app.include_router(arco_router, prefix="/api/v1/arco", tags=["ARCO"])
 app.include_router(poleana_router)
-# TODO: Sistema B deshabilitado por vulnerabilidad — ver Fix 6.1
-# app.include_router(auth_router_new)                     # autenticación JWT (/auth/...)
-# app.include_router(consentimientos_router)              # gestión de consentimientos (/consentimientos)
+# Sistema B eliminado — archivos movidos a app/legacy/
 
 
 @app.get("/health", tags=["Health"])

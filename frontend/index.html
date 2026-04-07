@@ -1319,6 +1319,28 @@
       border: 1px solid var(--border) !important;
       color: var(--muted);
     }
+
+    /* © YAGA Project — ARCO / PRIVACIDAD */
+    .privacy-header { padding: 1rem; border-bottom: 1px solid var(--border, #1a2a3a); }
+    .privacy-header h2 { margin: 0; font-size: 1.2rem; }
+    .privacy-subtitle { font-size: 0.75rem; opacity: 0.6; margin: 0.25rem 0 0; }
+    .back-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.9rem; padding: 0; margin-bottom: 0.5rem; }
+    .arco-card { background: var(--card-bg, #0e1b27); border-radius: 8px; padding: 1.2rem; margin: 0.75rem; }
+    .arco-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+    .arco-card p { font-size: 0.8rem; opacity: 0.7; margin: 0 0 0.75rem; }
+    .arco-btn { background: var(--accent); color: #000; border: none; border-radius: 6px; padding: 0.6rem 1.2rem; cursor: pointer; font-weight: 600; font-size: 0.85rem; width: 100%; }
+    .arco-btn-danger { background: #FF1744; color: #fff; }
+    .arco-input { width: 100%; background: var(--input-bg, #192735); border: none; border-radius: 6px; padding: 0.6rem; color: var(--text); margin-bottom: 0.5rem; font-size: 0.9rem; box-sizing: border-box; }
+    .arco-danger { border: 1px solid #FF174420; }
+    .arco-result { margin-top: 0.75rem; font-size: 0.8rem; background: #0a0a0a; border-radius: 6px; padding: 0.75rem; word-break: break-all; }
+    .arco-toggle { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.85rem; }
+    .arco-toggle input { display: none; }
+    .toggle-slider { width: 40px; height: 22px; background: #333; border-radius: 11px; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+    .toggle-slider::after { content: ''; position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; }
+    .arco-toggle input:checked + .toggle-slider { background: var(--accent); }
+    .arco-toggle input:checked + .toggle-slider::after { left: 20px; }
+    #privacyScreen { overflow-y: auto; flex-direction: column; }
+    #privacyScreen.active { display: flex; }
   </style>
 </head>
 <body>
@@ -1472,6 +1494,9 @@
     </div>
     <div class="ud-item" onclick="$('userDropdown').classList.remove('open'); abrirImport()">
       <span class="ud-icon">📥</span> Importar historial Uber/DiDi
+    </div>
+    <div class="ud-item" onclick="$('userDropdown').classList.remove('open'); abrirPrivacidad()">
+      <span class="ud-icon">🔒</span> Mis datos / ARCO
     </div>
     <div class="ud-item danger" onclick="cerrarSesion()">
       <span class="ud-icon">🚪</span> Cerrar sesión
@@ -1700,6 +1725,56 @@
     <button class="mapa-fab" id="mapaFab" style="display:none" onclick="abrirImport()">+ Importar</button>
 
   </div><!-- /screen-mapa -->
+
+  <!-- PRIVACY / ARCO SCREEN -->
+  <div class="screen" id="privacyScreen">
+    <div class="privacy-header">
+      <button class="back-btn" id="btnBackFromPrivacy">&#8592; Volver</button>
+      <h2>Mis Datos</h2>
+      <p class="privacy-subtitle">Derechos ARCO — Ley Federal de Proteccion de Datos (LFPDPPP)</p>
+    </div>
+
+    <!-- ACCESO -->
+    <div class="arco-card" id="arcoAcceso">
+      <h3>Acceso</h3>
+      <p>Consulta los datos personales que tenemos registrados.</p>
+      <button class="arco-btn" id="btnArcoAcceso">Ver mis datos</button>
+      <div class="arco-result hidden" id="arcoAccesoResult"></div>
+    </div>
+
+    <!-- RECTIFICACION -->
+    <div class="arco-card" id="arcoRect">
+      <h3>Rectificacion</h3>
+      <p>Actualiza tu email o telefono registrado.</p>
+      <input type="email" placeholder="Nuevo email" id="arcoNewEmail" class="arco-input"/>
+      <input type="tel" placeholder="Nuevo telefono" id="arcoNewPhone" class="arco-input"/>
+      <button class="arco-btn" id="btnArcoRect">Actualizar datos</button>
+    </div>
+
+    <!-- OPOSICION -->
+    <div class="arco-card" id="arcoOpos">
+      <h3>Oposicion</h3>
+      <p>Controla el uso de tus datos para comunicaciones y analisis.</p>
+      <label class="arco-toggle">
+        <span>Marketing / Promociones</span>
+        <input type="checkbox" id="toggleMarketing" />
+        <span class="toggle-slider"></span>
+      </label>
+      <label class="arco-toggle">
+        <span>Investigacion / Mejora del servicio</span>
+        <input type="checkbox" id="toggleInvestigacion" />
+        <span class="toggle-slider"></span>
+      </label>
+      <button class="arco-btn" id="btnArcoOpos">Guardar preferencias</button>
+    </div>
+
+    <!-- CANCELACION -->
+    <div class="arco-card arco-danger" id="arcoCancelacion">
+      <h3>Cancelacion</h3>
+      <p>Solicitar la eliminacion de tu cuenta y datos personales. Los datos transaccionales se conservan 7 anos por obligacion fiscal.</p>
+      <button class="arco-btn arco-btn-danger" id="btnArcoCancelacion">Eliminar mi cuenta</button>
+    </div>
+  </div><!-- /privacyScreen -->
 
   <!-- MODAL IMPORT -->
   <div class="import-overlay" id="importOverlay" onclick="cerrarImportSiOverlay(event)">
@@ -2241,24 +2316,47 @@
       tripsList.innerHTML = '<div class="empty-state">Sin viajes registrados aún</div>';
       return;
     }
-    tripsList.innerHTML = [...data.viajes_detalle].reverse().map((v, i) => {
-      const base    = parseFloat(v.monto);
-      const propina = parseFloat(v.propina || 0);
-      const total   = base + propina;
-      const plat    = (v.plataforma || 'UBER').toUpperCase();
-      const metodo  = (v.metodo_pago || '').toUpperCase();
-      return `
-        <div class="trip-item">
-          <div class="trip-left">
-            <span class="plataforma">${plat}</span>
-            <span class="metodo">${metodo}</span>
-          </div>
-          <div class="trip-right">
-            <span class="monto">${total.toFixed(2)}</span>
-            ${propina > 0 ? `<span class="propina-badge">+$${propina.toFixed(0)} propina</span>` : ''}
-          </div>
-        </div>`;
-    }).join('');
+    // © YAGA Project — DOM construction (sanitized, no innerHTML with API data)
+    tripsList.textContent = '';
+    [...data.viajes_detalle].reverse().forEach(function(v) {
+      var base    = parseFloat(v.monto);
+      var propina = parseFloat(v.propina || 0);
+      var total   = base + propina;
+      var plat    = (v.plataforma || 'UBER').toUpperCase();
+      var metodo  = (v.metodo_pago || '').toUpperCase();
+
+      var item = document.createElement('div');
+      item.className = 'trip-item';
+
+      var left = document.createElement('div');
+      left.className = 'trip-left';
+      var spanPlat = document.createElement('span');
+      spanPlat.className = 'plataforma';
+      spanPlat.textContent = plat;
+      var spanMetodo = document.createElement('span');
+      spanMetodo.className = 'metodo';
+      spanMetodo.textContent = metodo;
+      left.appendChild(spanPlat);
+      left.appendChild(spanMetodo);
+
+      var right = document.createElement('div');
+      right.className = 'trip-right';
+      var spanMonto = document.createElement('span');
+      spanMonto.className = 'monto';
+      spanMonto.textContent = total.toFixed(2);
+      right.appendChild(spanMonto);
+
+      if (propina > 0) {
+        var spanPropina = document.createElement('span');
+        spanPropina.className = 'propina-badge';
+        spanPropina.textContent = '+$' + propina.toFixed(0) + ' propina';
+        right.appendChild(spanPropina);
+      }
+
+      item.appendChild(left);
+      item.appendChild(right);
+      tripsList.appendChild(item);
+    });
   }
 
   // ── FETCH RESUMEN ────────────────────────────────────────
@@ -2589,9 +2687,14 @@
       const subs = [];
       if (v.color) subs.push(v.color);
       if (v.placa) subs.push(v.placa.toUpperCase());
-      $('perfilSub').innerHTML = subs.map((s, i) =>
-        `<span>${i === 0 ? s : s}</span>`
-      ).join('');
+      // © YAGA Project — sanitized DOM construction
+      var perfilSubEl = $('perfilSub');
+      perfilSubEl.textContent = '';
+      subs.forEach(function(s) {
+        var span = document.createElement('span');
+        span.textContent = s;
+        perfilSubEl.appendChild(span);
+      });
       // Pre-llenar formulario con datos actuales
       $('pMarca').value = v.marca  || '';
       $('pModelo').value = v.modelo || '';
@@ -3299,6 +3402,122 @@
     document.getElementById("helpPanel").classList.remove("open");
     document.getElementById("btnHelp").classList.remove("active");
     document.getElementById("cmdInput").focus();
+  }
+
+  // © YAGA Project — ARCO / Privacidad screen
+  function abrirPrivacidad() {
+    // Ocultar todas las screens de tabs
+    document.querySelectorAll('.screen').forEach(function(s) {
+      s.classList.remove('active');
+    });
+    document.querySelectorAll('.tab').forEach(function(t) {
+      t.classList.remove('active');
+    });
+    document.getElementById('privacyScreen').classList.add('active');
+    var btnBack = $('btnBack');
+    if (btnBack) btnBack.classList.add('visible');
+    initArcoScreen();
+  }
+
+  var _arcoInitialized = false;
+  function initArcoScreen() {
+    if (_arcoInitialized) {
+      // Solo recargar consentimientos
+      loadConsentimientos();
+      return;
+    }
+    _arcoInitialized = true;
+
+    // Acceso
+    document.getElementById('btnArcoAcceso').addEventListener('click', async function() {
+      var token = getToken();
+      if (!token) return showToast('Inicia sesion primero', 'error');
+      var res = await fetch(API + '/arco/acceso', { headers: { Authorization: 'Bearer ' + token }});
+      if (res.status === 401) { clearSession(); return; }
+      var data = await res.json();
+      var el = document.getElementById('arcoAccesoResult');
+      el.classList.remove('hidden');
+      el.textContent = JSON.stringify(data, null, 2);
+    });
+
+    // Rectificacion
+    document.getElementById('btnArcoRect').addEventListener('click', async function() {
+      var email = document.getElementById('arcoNewEmail').value.trim();
+      var phone = document.getElementById('arcoNewPhone').value.trim();
+      if (!email && !phone) return showToast('Ingresa al menos un campo', 'error');
+      var body = {};
+      if (email) body.email = email;
+      if (phone) body.phone = phone;
+      var token = getToken();
+      if (!token) return showToast('Inicia sesion primero', 'error');
+      var res = await fetch(API + '/arco/rectificacion', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify(body)
+      });
+      var data = await res.json();
+      showToast(res.ok ? 'Datos actualizados' : (data.detail || 'Error'), res.ok ? '' : 'error');
+    });
+
+    // Oposicion
+    document.getElementById('btnArcoOpos').addEventListener('click', async function() {
+      var token = getToken();
+      if (!token) return showToast('Inicia sesion primero', 'error');
+      var marketing = document.getElementById('toggleMarketing').checked;
+      var invest = document.getElementById('toggleInvestigacion').checked;
+      await fetch(API + '/arco/oposicion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ finalidad: 'marketing', activo: marketing })
+      });
+      await fetch(API + '/arco/oposicion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ finalidad: 'investigacion', activo: invest })
+      });
+      showToast('Preferencias guardadas', '');
+    });
+
+    // Cancelacion
+    document.getElementById('btnArcoCancelacion').addEventListener('click', async function() {
+      if (!confirm('Estas seguro? Esta accion eliminara tu cuenta permanentemente.')) return;
+      var token = getToken();
+      if (!token) return;
+      var res = await fetch(API + '/arco/cancelacion', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (res.ok) {
+        clearSession();
+        showToast('Cuenta eliminada', '');
+      } else {
+        showToast('Error al eliminar cuenta', 'error');
+      }
+    });
+
+    // Back button
+    document.getElementById('btnBackFromPrivacy').addEventListener('click', function() {
+      switchTab('dashboard');
+    });
+
+    // Cargar consentimientos
+    loadConsentimientos();
+  }
+
+  async function loadConsentimientos() {
+    var token = getToken();
+    if (!token) return;
+    try {
+      var res = await fetch(API + '/arco/acceso', { headers: { Authorization: 'Bearer ' + token }});
+      if (!res.ok) return;
+      var data = await res.json();
+      if (data.consentimientos) {
+        var mk = data.consentimientos.find(function(c) { return c.finalidad === 'marketing'; });
+        var inv = data.consentimientos.find(function(c) { return c.finalidad === 'investigacion'; });
+        if (mk) document.getElementById('toggleMarketing').checked = mk.activo;
+        if (inv) document.getElementById('toggleInvestigacion').checked = inv.activo;
+      }
+    } catch(e) { /* offline — toggles quedan en default */ }
   }
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

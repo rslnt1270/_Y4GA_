@@ -30,6 +30,26 @@ class ClassificationResult:
     matched_keywords: list[str]
     entities: ExtractedEntities = field(default_factory=ExtractedEntities)
 
+# ── Categorias de gasto (español MX con slang de conductores) ────────────────
+CATEGORIAS_GASTO = {
+    'gasolina': ['gasolina', 'gas', 'combustible', 'litros', 'pemex', 'bp'],
+    'mantenimiento': ['aceite', 'llanta', 'frenos', 'servicio', 'taller', 'mecanico'],
+    'comida': ['comida', 'almuerzo', 'cena', 'desayuno', 'taqueria', 'restaurant'],
+    'lavado': ['lavado', 'lavada', 'lavar', 'autolavado'],
+    'seguro': ['seguro', 'poliza', 'cobertura'],
+    'telefono': ['telefono', 'celular', 'datos', 'recarga', 'internet'],
+    'herramienta': ['accesorio', 'cargador', 'adaptador', 'soporte'],
+}
+
+
+def _detectar_categoria_gasto(normalized: str) -> Optional[str]:
+    """Detecta categoria de gasto por keywords en texto normalizado."""
+    for categoria, keywords in CATEGORIAS_GASTO.items():
+        if any(kw in normalized for kw in keywords):
+            return categoria
+    return None
+
+
 def extract_entities(text: str) -> ExtractedEntities:
     entities = ExtractedEntities()
     normalized = normalize(text)
@@ -63,6 +83,9 @@ def extract_entities(text: str) -> ExtractedEntities:
     else:
         entities.metodo_pago = 'app'
 
+    # 5. Categoria de gasto (solo se asigna si el intent es REGISTRAR_GASTO)
+    entities.categoria_gasto = _detectar_categoria_gasto(normalized)
+
     return entities
 
 def classify(text: str) -> ClassificationResult:
@@ -87,6 +110,10 @@ def classify(text: str) -> ClassificationResult:
     best = max(scores, key=lambda i: scores[i][0])
     best_score, best_kws = scores[best]
     entities = extract_entities(text)
+
+    # categoria_gasto solo aplica para gastos
+    if best != DriverIntent.REGISTRAR_GASTO:
+        entities.categoria_gasto = None
 
     return ClassificationResult(
         intent=best,

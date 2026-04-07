@@ -3125,11 +3125,13 @@
       $('authScreen').classList.add('hidden');
       initUserMenu();
       fetchResumen();
+      startContinuousListening();
     } catch(e) {
       // Sin conexion — permitir uso offline con token existente
       $('authScreen').classList.add('hidden');
       initUserMenu();
       fetchResumen();
+      startContinuousListening();
     }
   }
 
@@ -3170,6 +3172,7 @@
         body: JSON.stringify({ email: email, password: pass })
       });
       var data = await res.json();
+      if (res.status === 429) { setAuthError("loginError", "Demasiados intentos. Espera 15 minutos e intenta de nuevo."); return; }
       if (!res.ok) { setAuthError("loginError", data.detail || "Credenciales incorrectas"); return; }
       saveSession(data.token, data.conductor_id, data.nombre, email, remember);
       CONDUCTOR_ID = data.conductor_id;

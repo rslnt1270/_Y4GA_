@@ -158,7 +158,7 @@ async def register(body: RegistroBody, pool=Depends(get_pool)):
 # ── /auth/login ───────────────────────────────────────────────────────────────
 
 @router.post("/auth/login")
-@limiter.limit("5/15minute")
+@limiter.limit("10/15minute")
 async def login(request: Request, body: LoginBody, pool=Depends(get_pool)):
     """Login por email + contraseña. Devuelve JWT compatible con la PWA."""
     async with pool.acquire() as conn:

@@ -5,7 +5,7 @@
 
 'use strict';
 
-const CACHE_NAME  = 'yaga-shell-v1';
+const CACHE_NAME  = 'yaga-shell-v8';
 const API_PREFIX  = '/api/';
 
 // Archivos del shell que se pre-cachean en install

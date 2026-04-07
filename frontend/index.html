@@ -352,11 +352,22 @@
       bottom: 0;
       background: var(--surface);
       border-top: 1px solid var(--border);
-      padding: 12px 16px;
+      padding: 8px 16px 12px;
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       align-items: center;
     }
+    .wake-hint {
+      flex: 0 0 100%;
+      font-size: .66rem;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: .02em;
+      min-height: 14px;
+      order: -1;
+    }
+    .wake-hint.active { color: #f5a623; font-weight: 600; }
     .voice-input {
       flex: 1;
       background: var(--bg);
@@ -388,6 +399,14 @@
     .btn-mic.listening {
       background: var(--danger);
       animation: pulse 1s infinite;
+    }
+    .btn-mic.always-on {
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34,197,94,.35);
+    }
+    .btn-mic.wake-detected {
+      background: #f5a623;
+      animation: pulse .6s infinite;
     }
 
     .btn-send {
@@ -1184,6 +1203,122 @@
       height: 24px !important;
     }
     .leaflet-popup-close-button:hover { color: var(--accent) !important; background: none !important; }
+
+    /* ── YAGA ROBOT AVATAR ── */
+    .yaga-robot {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      width: 88px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      filter: drop-shadow(0 4px 12px rgba(0,229,255,0.3));
+      transition: filter 0.3s ease, transform 0.2s ease;
+    }
+    .yaga-robot:hover {
+      transform: scale(1.08);
+      filter: drop-shadow(0 6px 18px rgba(0,229,255,0.5));
+    }
+    .yaga-robot:active { transform: scale(0.96); }
+    .yaga-robot-label {
+      font-size: 9px;
+      font-family: 'Courier New', monospace;
+      color: #00E5FF;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.85;
+      transition: color 0.3s ease;
+      text-shadow: 0 0 6px currentColor;
+      text-align: center;
+      white-space: nowrap;
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .yaga-robot-label.highlight { color: var(--text); font-weight: 600; }
+    /* Blink animations */
+    @keyframes robotBlinkSlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .25; }
+    }
+    @keyframes robotBlinkFast {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .15; }
+    }
+    @keyframes robotFlash {
+      0% { opacity: 1; }
+      25% { opacity: .1; }
+      50% { opacity: 1; }
+      75% { opacity: .1; }
+      100% { opacity: 1; }
+    }
+    .robot-blink-slow .robot-eye-core { animation: robotBlinkSlow .6s infinite; }
+    .robot-blink-fast .robot-eye-core { animation: robotBlinkFast .3s infinite; }
+    .robot-flash .robot-eye-core { animation: robotFlash .25s 2; }
+    /* Idle halo breathing */
+    @keyframes robotIdleHalo {
+      0%, 100% { opacity: .08; }
+      50% { opacity: .16; }
+    }
+    @keyframes robotIdlePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .82; }
+    }
+    .robot-idle .robot-eye-halo { animation: robotIdleHalo 2.8s ease-in-out infinite; }
+    .robot-idle .robot-eye-core { animation: robotIdlePulse 2.8s ease-in-out infinite; }
+    /* Halo synced to blink/flash states */
+    .robot-blink-slow .robot-eye-halo { animation: robotBlinkSlow .6s infinite; opacity: .12; }
+    .robot-blink-fast .robot-eye-halo { animation: robotBlinkFast .3s infinite; opacity: .12; }
+    .robot-flash .robot-eye-halo { animation: robotFlash .25s 2; opacity: .12; }
+
+    /* ── MIC PRIVACY BANNER ── */
+    .mic-privacy-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 1100;
+      background: var(--surface);
+      border-top: 2px solid var(--accent);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,.4);
+    }
+    .mic-privacy-banner p {
+      font-size: .78rem;
+      color: var(--text);
+      line-height: 1.4;
+      margin: 0;
+    }
+    .mic-privacy-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .mic-privacy-actions button {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: .75rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    .btn-mic-accept {
+      background: var(--accent);
+      color: #0f1923;
+    }
+    .btn-mic-disable {
+      background: transparent;
+      border: 1px solid var(--border) !important;
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -1645,6 +1780,7 @@
 
   <!-- VOICE BAR -->
   <div class="voice-bar">
+    <div class="wake-hint" id="wakeHint"></div>
     <!-- HELP PANEL -->
     <div class="help-panel" id="helpPanel">
       <div class="help-title">Comandos disponibles — toca para usar</div>
@@ -1716,12 +1852,139 @@
       class="voice-input"
       id="cmdInput"
       type="text"
-      placeholder="viaje uber efectivo 90…"
+      placeholder="Di 'YAGA activa' o escribe aquí…"
       autocomplete="off"
       autocorrect="off"
       spellcheck="false"
     />
     <button class="btn-send" id="btnSend" title="Enviar">↑</button>
+  </div>
+
+  <!-- YAGA ROBOT AVATAR -->
+  <div class="yaga-robot" id="yagaRobot" role="button" aria-label="Asistente YAGA" tabindex="0">
+    <svg id="yagaRobotSvg" width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Helmet radial gradient — deep matte metal -->
+        <radialGradient id="helmetBg" cx="42%" cy="36%" r="60%">
+          <stop offset="0%" stop-color="#1d1d1d"/>
+          <stop offset="55%" stop-color="#0c0c0c"/>
+          <stop offset="100%" stop-color="#040404"/>
+        </radialGradient>
+        <!-- Outer rim metallic linear gradient -->
+        <linearGradient id="helmetRim" x1="10%" y1="0%" x2="90%" y2="100%">
+          <stop offset="0%" stop-color="#2e2e2e"/>
+          <stop offset="40%" stop-color="#141414"/>
+          <stop offset="100%" stop-color="#222222"/>
+        </linearGradient>
+        <!-- Visor glass gloss -->
+        <linearGradient id="visorSheen" x1="5%" y1="0%" x2="70%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.07"/>
+          <stop offset="45%" stop-color="#ffffff" stop-opacity="0.02"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0.2"/>
+        </linearGradient>
+        <!-- Eye glow — LEFT -->
+        <radialGradient id="eyeGlowL" cx="50%" cy="44%" r="50%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+          <stop offset="22%" stop-color="#00E5FF" stop-opacity="1"/>
+          <stop offset="60%" stop-color="#00E5FF" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/>
+        </radialGradient>
+        <!-- Eye glow — RIGHT -->
+        <radialGradient id="eyeGlowR" cx="50%" cy="44%" r="50%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+          <stop offset="22%" stop-color="#00E5FF" stop-opacity="1"/>
+          <stop offset="60%" stop-color="#00E5FF" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/>
+        </radialGradient>
+        <!-- Enhanced bloom filter -->
+        <filter id="eyeBloom" x="-90%" y="-90%" width="280%" height="280%">
+          <feGaussianBlur stdDeviation="2.8" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <!-- Halo ambient blur -->
+        <filter id="haloBlur" x="-200%" y="-200%" width="500%" height="500%">
+          <feGaussianBlur stdDeviation="5.5"/>
+        </filter>
+      </defs>
+
+      <!-- OUTER HELMET RIM — metallic bezel -->
+      <ellipse cx="40" cy="41" rx="38.5" ry="36.5" fill="url(#helmetRim)"/>
+      <!-- HELMET BODY — dark matte surface -->
+      <ellipse cx="40" cy="41" rx="36" ry="34" fill="url(#helmetBg)"/>
+
+      <!-- TOP HELMET SEAM LINES — machined detail -->
+      <path d="M 15 20 Q 40 12.5 65 20" stroke="#212121" stroke-width="0.9" fill="none"/>
+      <path d="M 17 22 Q 40 15 63 22" stroke="#2a2a2a" stroke-width="0.5" fill="none" opacity="0.5"/>
+
+      <!-- VISOR GLASS AREA -->
+      <ellipse cx="40" cy="36" rx="28.5" ry="21.5" fill="#050505"/>
+      <ellipse cx="40" cy="36" rx="27.5" ry="20.5" fill="none" stroke="#131313" stroke-width="0.5"/>
+      <!-- Visor glass sheen overlay -->
+      <ellipse cx="40" cy="36" rx="28.5" ry="21.5" fill="url(#visorSheen)"/>
+      <!-- Top visor highlight reflection -->
+      <path d="M 23 21.5 Q 40 17.5 57 21.5" stroke="#353535" stroke-width="1.6" fill="none" opacity="0.55"/>
+      <path d="M 26.5 19.5 Q 40 16 53.5 19.5" stroke="#404040" stroke-width="0.6" fill="none" opacity="0.35"/>
+      <!-- Side visor scratches — wear detail -->
+      <path d="M 13 30 Q 14 36 13 42" stroke="#161616" stroke-width="1.1" fill="none" opacity="0.65"/>
+      <path d="M 67 29 Q 66 35 67 41" stroke="#161616" stroke-width="1.1" fill="none" opacity="0.65"/>
+
+      <!-- EYE HOUSING PANEL -->
+      <rect x="11.5" y="24.5" width="57" height="26" rx="3.5" fill="#020202"/>
+
+      <!-- AMBIENT HALO — color-reactive glow behind each eye -->
+      <circle cx="28" cy="37.5" r="13" fill="#00E5FF" opacity="0.08" class="robot-eye-halo" filter="url(#haloBlur)"/>
+      <circle cx="52" cy="37.5" r="13" fill="#00E5FF" opacity="0.08" class="robot-eye-halo" filter="url(#haloBlur)"/>
+
+      <!-- OJO IZQUIERDO — concentric speaker/lens rings -->
+      <circle cx="28" cy="37.5" r="11.5" fill="#060606" stroke="#242424" stroke-width="0.8"/>
+      <circle cx="28" cy="37.5" r="10"   fill="none" stroke="#191919" stroke-width="1.4"/>
+      <circle cx="28" cy="37.5" r="8.5"  fill="none" stroke="#131313" stroke-width="0.8"/>
+      <circle cx="28" cy="37.5" r="7"    fill="none" stroke="#101010" stroke-width="0.7"/>
+      <circle cx="28" cy="37.5" r="5.5"  fill="none" stroke="#0d0d0d" stroke-width="0.6"/>
+      <!-- Left eye glow core -->
+      <circle cx="28" cy="37.5" r="5"   fill="url(#eyeGlowL)" filter="url(#eyeBloom)" class="robot-eye-core"/>
+      <circle cx="28" cy="37.5" r="2"   fill="white" opacity="0.95" class="robot-eye-core"/>
+      <!-- Left outer indicator ring -->
+      <circle cx="28" cy="37.5" r="11"  fill="none" stroke="#00E5FF" stroke-width="0.9" opacity="0.28" class="robot-eye-ring"/>
+
+      <!-- OJO DERECHO — concentric speaker/lens rings -->
+      <circle cx="52" cy="37.5" r="11.5" fill="#060606" stroke="#242424" stroke-width="0.8"/>
+      <circle cx="52" cy="37.5" r="10"   fill="none" stroke="#191919" stroke-width="1.4"/>
+      <circle cx="52" cy="37.5" r="8.5"  fill="none" stroke="#131313" stroke-width="0.8"/>
+      <circle cx="52" cy="37.5" r="7"    fill="none" stroke="#101010" stroke-width="0.7"/>
+      <circle cx="52" cy="37.5" r="5.5"  fill="none" stroke="#0d0d0d" stroke-width="0.6"/>
+      <!-- Right eye glow core -->
+      <circle cx="52" cy="37.5" r="5"   fill="url(#eyeGlowR)" filter="url(#eyeBloom)" class="robot-eye-core"/>
+      <circle cx="52" cy="37.5" r="2"   fill="white" opacity="0.95" class="robot-eye-core"/>
+      <!-- Right outer indicator ring -->
+      <circle cx="52" cy="37.5" r="11"  fill="none" stroke="#00E5FF" stroke-width="0.9" opacity="0.28" class="robot-eye-ring"/>
+
+      <!-- EYE BRIDGE CENTER — nose detail -->
+      <rect x="37.5" y="34.8" width="5" height="5.5" rx="1.5" fill="#070707"/>
+      <rect x="38.5" y="35.8" width="3" height="3.5" rx="0.8" fill="#0c0c0c"/>
+
+      <!-- CHIN PLATE -->
+      <rect x="20" y="54" width="40" height="11" rx="3" fill="#090909" stroke="#1b1b1b" stroke-width="0.5"/>
+      <!-- LED indicators — 3 bars -->
+      <rect x="25"  y="56.5" width="8" height="3" rx="1" fill="#0c0c0c" stroke="#181818" stroke-width="0.3"/>
+      <rect x="36"  y="56.5" width="8" height="3" rx="1" fill="#0c0c0c" stroke="#181818" stroke-width="0.3"/>
+      <rect x="47"  y="56.5" width="8" height="3" rx="1" fill="#0c0c0c" stroke="#181818" stroke-width="0.3"/>
+      <!-- YAGA serial label -->
+      <text x="40" y="63" text-anchor="middle" font-size="4" font-family="'Courier New', monospace" fill="#252525" font-weight="bold" letter-spacing="1.5">YAGA</text>
+    </svg>
+    <div class="yaga-robot-label" id="robotLabel">YAGA</div>
+  </div>
+
+  <!-- MIC PRIVACY BANNER (one-time after login) -->
+  <div class="mic-privacy-banner hidden" id="micPrivacyBanner">
+    <p>El microfono detecta unicamente la palabra <b>YAGA</b>. El audio se procesa localmente. Nada se envia sin tu activacion.</p>
+    <div class="mic-privacy-actions">
+      <button class="btn-mic-disable" id="btnMicDisable">Desactivar microfono</button>
+      <button class="btn-mic-accept" id="btnMicAccept">Entendido</button>
+    </div>
   </div>
 
   <!-- TOAST -->
@@ -1730,6 +1993,148 @@
 <script>
   // ── CONFIG ──────────────────────────────────────────────
   const API = '/api/v1';
+
+  // © YAGA Project — Robot Avatar State Machine
+  // ── ROBOT AVATAR ──────────────────────────────────────────
+  var _robotStateTimer = null;
+  var _currentRobotState = 'idle';
+
+  var EYE_COLORS = {
+    idle:       '#00E5FF',
+    wake:       '#FFB300',
+    processing: '#2979FF',
+    success:    '#00E676',
+    error:      '#FF1744',
+    disabled:   '#546E7A'
+  };
+
+  var ROBOT_STATES = {
+    idle:       { anim: 'robot-idle',      label: 'YAGA',             labelHL: false, duration: 0 },
+    wake:       { anim: 'robot-blink-slow', label: 'Escuchando...',  labelHL: true,  duration: 5000 },
+    processing: { anim: 'robot-blink-fast', label: 'Procesando...',  labelHL: true,  duration: 0 },
+    success:    { anim: 'robot-flash',      label: 'Listo!',         labelHL: true,  duration: 500 },
+    error:      { anim: 'robot-flash',      label: 'Error',          labelHL: true,  duration: 1000 },
+    disabled:   { anim: '',                 label: 'Mic desactivado', labelHL: false, duration: 0 }
+  };
+
+  window.setRobotState = function(state) {
+    var cfg = ROBOT_STATES[state];
+    if (!cfg) return;
+    if (_robotStateTimer) { clearTimeout(_robotStateTimer); _robotStateTimer = null; }
+
+    _currentRobotState = state;
+    var svg   = document.getElementById('yagaRobotSvg');
+    var label = document.getElementById('robotLabel');
+    var color = EYE_COLORS[state] || '#00E5FF';
+
+    if (!svg || !label) return;
+
+    // Update gradient stops with new color
+    ['eyeGlowL', 'eyeGlowR'].forEach(function(id) {
+      var grad = svg.querySelector('#' + id);
+      if (grad) {
+        var stops = grad.querySelectorAll('stop');
+        if (stops[1]) stops[1].setAttribute('stop-color', color);
+        if (stops[2]) stops[2].setAttribute('stop-color', color);
+        if (stops[3]) stops[3].setAttribute('stop-color', color);
+      }
+    });
+
+    // Update outer glow rings
+    svg.querySelectorAll('.robot-eye-ring').forEach(function(r) {
+      r.setAttribute('stroke', color);
+    });
+
+    // Update ambient halo fill color
+    svg.querySelectorAll('.robot-eye-halo').forEach(function(h) {
+      h.setAttribute('fill', color);
+    });
+
+    // Update container drop-shadow to match eye color
+    var robot = document.getElementById('yagaRobot');
+    if (robot) {
+      var hex = color;
+      var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+      robot.style.filter = 'drop-shadow(0 4px 12px rgba(' + r + ',' + g + ',' + b + ',0.3))';
+    }
+
+    // Set animation class on SVG element
+    svg.classList.remove('robot-idle', 'robot-blink-slow', 'robot-blink-fast', 'robot-flash');
+    if (cfg.anim) svg.classList.add(cfg.anim);
+
+    // Set label
+    label.textContent = cfg.label;
+    label.classList.toggle('highlight', cfg.labelHL);
+    label.style.color = cfg.labelHL ? color : '';
+    label.style.textShadow = cfg.labelHL ? '0 0 6px ' + color : '0 0 6px currentColor';
+
+    // Auto-return to idle after duration
+    if (cfg.duration > 0) {
+      _robotStateTimer = setTimeout(function() {
+        if (_currentRobotState === state) setRobotState('idle');
+      }, cfg.duration);
+    }
+  };
+
+  // Click on robot = activate command mode (simulates wake word)
+  document.addEventListener('DOMContentLoaded', function() {
+    var robot = document.getElementById('yagaRobot');
+    if (robot) {
+      robot.addEventListener('click', function() {
+        if (_currentRobotState === 'disabled') {
+          showToast('Microfono desactivado. Reactiva desde ajustes.', 'error');
+          return;
+        }
+        // If recognition exists and continuous, trigger command mode
+        if (typeof activateCommandMode === 'function' && recognition) {
+          if (!isContinuousListening) startContinuousListening();
+          activateCommandMode();
+          setRobotState('wake');
+        } else {
+          // No voice support — focus input
+          var inp = document.getElementById('cmdInput');
+          if (inp) inp.focus();
+          setRobotState('wake');
+        }
+      });
+    }
+  });
+
+  // ── MIC PRIVACY BANNER ──────────────────────────────────
+  function showMicPrivacyBanner() {
+    if (localStorage.getItem('yaga_mic_notice_shown') === '1') return;
+    var banner = document.getElementById('micPrivacyBanner');
+    if (!banner) return;
+    banner.classList.remove('hidden');
+
+    document.getElementById('btnMicAccept').addEventListener('click', function() {
+      localStorage.setItem('yaga_mic_notice_shown', '1');
+      banner.classList.add('hidden');
+    });
+
+    document.getElementById('btnMicDisable').addEventListener('click', function() {
+      localStorage.setItem('yaga_mic_notice_shown', '1');
+      localStorage.setItem('yaga_mic_disabled', '1');
+      banner.classList.add('hidden');
+      // Stop recognition and set disabled state
+      if (recognition) {
+        isContinuousListening = false;
+        try { recognition.stop(); } catch(ex) {}
+      }
+      setRobotState('disabled');
+      showToast('Microfono desactivado', '');
+    });
+  }
+
+  // Check if mic was previously disabled
+  function checkMicDisabled() {
+    if (localStorage.getItem('yaga_mic_disabled') === '1') {
+      setRobotState('disabled');
+      return true;
+    }
+    return false;
+  }
+
   // ── Seleccion de app ──────────────────────────────────────
   function mostrarSelect() {
     document.getElementById('selectScreen').classList.remove('hidden');
@@ -1887,6 +2292,7 @@
     cmdInput.value = '';
     cmdInput.disabled = true;
     btnSend.disabled  = true;
+    setRobotState('processing');
 
     try {
       const res = await fetch(`${API}/command`, {
@@ -1902,11 +2308,18 @@
       showToast(data.message, ok ? 'success' : '');
       if (data.intent === 'cerrar_jornada') {
         renderResumen({ error: true });
+        setRobotState('success');
+      } else if (data.intent === 'unknown') {
+        setRobotState('error');
       } else if (ok) {
         await fetchResumen();
+        setRobotState('success');
+      } else {
+        setRobotState('error');
       }
     } catch (e) {
       showToast('Sin conexión con el servidor', 'error');
+      setRobotState('error');
     } finally {
       cmdInput.disabled = false;
       btnSend.disabled  = false;
@@ -1914,30 +2327,166 @@
     }
   }
 
-  // ── VOICE (Web Speech API) ───────────────────────────────
-  let recognition = null;
+  // ── VOICE (Web Speech API) + WAKE WORD ──────────────────
+  let recognition          = null;
+  let isContinuousListening = false;
+  let isWaitingForCommand   = false;
+  let commandTimeout        = null;
+  let manualTrigger         = false; // fallback: usuario tocó el botón
+
+  const WAKE_WORDS = ['yaga activa', 'yaga captura comando', 'yaga graba'];
+
+  function normalizeText(s) {
+    return s.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9 ]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function detectWakeWord(text) {
+    const n = normalizeText(text);
+    return WAKE_WORDS.some(w => n.includes(w));
+  }
+
+  function setWakeHint(msg, highlight) {
+    const el = document.getElementById('wakeHint');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.toggle('active', !!highlight);
+  }
+
+  function activateCommandMode() {
+    isWaitingForCommand = true;
+    btnMic.classList.remove('always-on');
+    btnMic.classList.add('wake-detected');
+    btnMic.textContent = '👂';
+    setWakeHint('Escuchando tu comando…', true);
+    showToast('YAGA escucha — di tu comando', '');
+    setRobotState('wake');
+    if (commandTimeout) clearTimeout(commandTimeout);
+    commandTimeout = setTimeout(() => {
+      if (isWaitingForCommand) {
+        isWaitingForCommand = false;
+        manualTrigger       = false;
+        btnMic.classList.remove('wake-detected');
+        btnMic.classList.add('always-on');
+        btnMic.textContent = '🎤';
+        setWakeHint('Di "YAGA activa" para grabar', false);
+        showToast('No se detectó comando', 'error');
+        setRobotState('idle');
+      }
+    }, 5000);
+  }
+
+  function startContinuousListening() {
+    if (!recognition || isContinuousListening) return;
+    // Respect user's mic disable preference
+    if (checkMicDisabled()) return;
+    recognition.continuous     = true;
+    recognition.interimResults = true;
+    isContinuousListening = true;
+    isWaitingForCommand   = false;
+    manualTrigger         = false;
+    btnMic.classList.add('always-on');
+    btnMic.textContent = '🎤';
+    setWakeHint('Di "YAGA activa" para grabar', false);
+    setRobotState('idle');
+    showMicPrivacyBanner();
+    try { recognition.start(); } catch(ex) { /* ya iniciado */ }
+  }
+
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SR();
-    recognition.lang = 'es-MX';
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.lang           = 'es-MX';
+    recognition.continuous     = true;
+    recognition.interimResults = true;
 
     recognition.onresult = e => {
-      const transcript = e.results[0][0].transcript;
-      cmdInput.value = transcript;
-      sendCommand(transcript);
+      if (manualTrigger) {
+        // Fallback manual: tomar el último resultado final
+        const last = e.results[e.results.length - 1];
+        if (last.isFinal) {
+          const transcript = last[0].transcript.trim();
+          if (transcript.length > 0) {
+            cmdInput.value  = transcript;
+            manualTrigger   = false;
+            if (commandTimeout) clearTimeout(commandTimeout);
+            isWaitingForCommand = false;
+            btnMic.classList.remove('wake-detected');
+            if (isContinuousListening) {
+              btnMic.classList.add('always-on');
+              setWakeHint('Di "YAGA activa" para grabar', false);
+            } else {
+              btnMic.classList.remove('listening');
+              btnMic.textContent = '🎤';
+            }
+            sendCommand(transcript);
+          }
+        }
+        return;
+      }
+
+      // Modo continuo: detectar wake word → capturar comando
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const result     = e.results[i];
+        const transcript = result[0].transcript;
+
+        if (!isWaitingForCommand) {
+          if (detectWakeWord(transcript)) {
+            activateCommandMode();
+          }
+        } else {
+          // Esperando comando post wake word
+          if (result.isFinal) {
+            const normalized = normalizeText(transcript);
+            const isWakeOnly = WAKE_WORDS.some(w =>
+              normalized === w || normalized === w + '.' || normalized === w + '?'
+            );
+            if (!isWakeOnly && transcript.trim().length > 2) {
+              if (commandTimeout) clearTimeout(commandTimeout);
+              isWaitingForCommand = false;
+              btnMic.classList.remove('wake-detected');
+              btnMic.classList.add('always-on');
+              btnMic.textContent = '🎤';
+              setWakeHint('Di "YAGA activa" para grabar', false);
+              cmdInput.value = transcript.trim();
+              sendCommand(transcript.trim());
+            } else if (detectWakeWord(transcript)) {
+              // Wake word repetida — reiniciar temporizador
+              if (commandTimeout) clearTimeout(commandTimeout);
+              activateCommandMode();
+            }
+          }
+        }
+      }
     };
+
     recognition.onend = () => {
-      btnMic.classList.remove('listening');
-      btnMic.textContent = '🎤';
+      if (isContinuousListening) {
+        // Reiniciar automáticamente para mantener escucha continua
+        setTimeout(() => {
+          try { recognition.start(); } catch(ex) { /* ignorar si ya está activo */ }
+        }, 200);
+      } else {
+        btnMic.classList.remove('listening', 'wake-detected');
+        btnMic.textContent = '🎤';
+      }
     };
-    recognition.onerror = () => {
-      btnMic.classList.remove('listening');
+
+    recognition.onerror = e => {
+      // Ignorar errores no críticos en modo continuo
+      if (isContinuousListening && (e.error === 'aborted' || e.error === 'no-speech')) return;
+      btnMic.classList.remove('listening', 'wake-detected', 'always-on');
       btnMic.textContent = '🎤';
-      showToast('No se pudo capturar audio', 'error');
+      if (!isContinuousListening) showToast('No se pudo capturar audio', 'error');
+      setRobotState('error');
     };
+
   } else {
+    // Firefox / navegador sin soporte — modo solo lectura del mic
+    setRobotState('disabled');
     btnMic.title = 'Microfono no disponible en Firefox';
     btnMic.style.opacity = '.35';
     btnMic.style.background = 'var(--muted)';
@@ -1954,12 +2503,31 @@
 
   btnMic.addEventListener('click', () => {
     if (!recognition) return;
-    if (btnMic.classList.contains('listening')) {
-      recognition.stop();
+    if (isContinuousListening) {
+      // Modo continuo activo — clic = captura manual inmediata (fallback)
+      if (isWaitingForCommand && !manualTrigger) {
+        // Ya esperando — cancelar
+        if (commandTimeout) clearTimeout(commandTimeout);
+        isWaitingForCommand = false;
+        btnMic.classList.remove('wake-detected');
+        btnMic.classList.add('always-on');
+        btnMic.textContent = '🎤';
+        setWakeHint('Di "YAGA activa" para grabar', false);
+        showToast('Captura cancelada', '');
+      } else if (!isWaitingForCommand) {
+        // Captura manual sin wake word
+        manualTrigger = true;
+        activateCommandMode();
+      }
     } else {
-      btnMic.classList.add('listening');
-      btnMic.textContent = '⏹';
-      recognition.start();
+      // Modo discreto (sin escucha continua aún)
+      if (btnMic.classList.contains('listening')) {
+        recognition.stop();
+      } else {
+        btnMic.classList.add('listening');
+        btnMic.textContent = '⏹';
+        recognition.start();
+      }
     }
   });
 
@@ -2505,6 +3073,7 @@
       document.getElementById("authScreen").classList.add("hidden");
       initUserMenu();
       fetchResumen();
+      startContinuousListening();
     } catch(e) { setAuthError("loginError", "Sin conexión"); }
     finally { btn.disabled = false; btn.textContent = "Entrar"; }
   }
@@ -2531,6 +3100,7 @@
       document.getElementById("authScreen").classList.add("hidden");
       initUserMenu();
       fetchResumen();
+      startContinuousListening();
     } catch(e) { setAuthError("regError", "Sin conexión"); }
     finally { btn.disabled = false; btn.textContent = "Crear cuenta"; }
   }
@@ -2608,6 +3178,7 @@
       document.getElementById("authScreen").classList.add("hidden");
       initUserMenu();
       fetchResumen();
+      startContinuousListening();
       showToast("Contraseña actualizada. Bienvenido de vuelta 🎉", "success");
     } catch(e) { setAuthError("resetError", "Sin conexión"); }
     finally { btn.disabled = false; btn.textContent = "Restablecer contraseña"; }

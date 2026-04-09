@@ -167,6 +167,77 @@ async def cerrar_jornada_con_gps(conductor_id: str) -> dict:
     }
 
 
+async def get_gps_historial(jornada_id: str, conductor_id: str) -> list:
+    """
+    Valida ownership y devuelve puntos GPS descifrados para visualización.
+    Las coordenadas se descifran en memoria — nunca se persisten en claro.
+    """
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id FROM jornadas WHERE id = $1 AND conductor_id = $2",
+            jornada_id, conductor_id,
+        )
+        if not row:
+            raise ValueError("Jornada no encontrada o acceso denegado")
+
+        gps_rows = await conn.fetch(
+            """
+            SELECT lat_cifrado, lng_cifrado, vel_kmh, ts
+              FROM jornada_gps_logs
+             WHERE jornada_id = $1
+             ORDER BY ts
+            """,
+            jornada_id,
+        )
+
+    puntos = []
+    for r in gps_rows:
+        try:
+            puntos.append({
+                "lat": float(decrypt_value(bytes(r["lat_cifrado"]))),
+                "lng": float(decrypt_value(bytes(r["lng_cifrado"]))),
+                "vel_kmh": float(r["vel_kmh"]) if r["vel_kmh"] is not None else None,
+                "ts": r["ts"].isoformat(),
+            })
+        except Exception:
+            continue  # punto corrupto — saltar silenciosamente
+
+    return puntos
+
+
+async def get_resumen_jornadas_con_gps(conductor_id: str) -> list:
+    """
+    Devuelve metadatos de jornadas que tienen al menos un punto GPS registrado.
+    Sin coordenadas — solo IDs, fechas y conteo de puntos para el selector UI.
+    """
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT j.id, j.fecha, j.estado,
+                   COUNT(g.id) AS total_puntos
+              FROM jornadas j
+              JOIN jornada_gps_logs g ON g.jornada_id = j.id
+             WHERE j.conductor_id = $1
+             GROUP BY j.id, j.fecha, j.estado
+            HAVING COUNT(g.id) > 0
+             ORDER BY j.fecha DESC
+             LIMIT 30
+            """,
+            conductor_id,
+        )
+    return [
+        {
+            "jornada_id": str(r["id"]),
+            "fecha": r["fecha"].isoformat(),
+            "estado": r["estado"],
+            "total_puntos": r["total_puntos"],
+        }
+        for r in rows
+    ]
+
+
 def _calcular_distancia(gps_rows) -> float:
     """
     Descifra lat/lng en memoria y calcula distancia acumulada Haversine.

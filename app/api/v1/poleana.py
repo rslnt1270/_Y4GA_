@@ -1,5 +1,10 @@
+# © YAGA Project — Todos los derechos reservados
 """
 POLEANA — Router REST + WebSocket para partidas en línea
+
+Migración Sprint 5-D.1: rooms persistidas en Redis (TTL 24h).
+Conexiones WebSocket se mantienen en memoria (_connections) ya que
+no son serializables; Redis almacena el estado serializable de cada sala.
 """
 import json
 import random
@@ -8,19 +13,47 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from pydantic import BaseModel
 from services.database import get_pool
 from services.auth_service import hash_password, verify_password, create_token, decode_token
+from core.redis import redis_client
 
 router = APIRouter(prefix="/api/v1/poleana", tags=["Poleana"])
 
-# ─── In-memory room registry ─────────────────────────────────────────────────
-# { code: { players:[{username,color,ws}], state, max, rules, started } }
-_rooms: dict = {}
+# ─── WebSocket connections (local — no serializable) ─────────────────────────
+# { code: [{"username": str, "color": int, "ws": WebSocket}] }
+_connections: dict = {}
 
 COLORS = ["#00e5a0", "#ff4444", "#4488ff", "#ffd700"]
+ROOM_PREFIX = "poleana:room:"
+ROOM_TTL = 86400  # 24h
 
 
 def _gen_code() -> str:
     chars = string.ascii_uppercase + string.digits
     return "".join(random.choices(chars, k=6))
+
+
+# ─── Redis helpers ────────────────────────────────────────────────────────────
+
+async def _get_room_meta(code: str) -> dict | None:
+    """Lee metadatos de la sala desde Redis. Retorna None si no existe."""
+    raw = await redis_client.get(f"{ROOM_PREFIX}{code}")
+    if not raw:
+        return None
+    return json.loads(raw)
+
+
+async def _set_room_meta(code: str, meta: dict) -> None:
+    """Persiste metadatos de la sala en Redis con TTL de 24h."""
+    await redis_client.setex(f"{ROOM_PREFIX}{code}", ROOM_TTL, json.dumps(meta))
+
+
+async def _del_room_meta(code: str) -> None:
+    """Elimina la sala de Redis."""
+    await redis_client.delete(f"{ROOM_PREFIX}{code}")
+
+
+async def _room_exists(code: str) -> bool:
+    """Retorna True si la sala existe en Redis."""
+    return bool(await redis_client.exists(f"{ROOM_PREFIX}{code}"))
 
 
 # ─── Models ──────────────────────────────────────────────────────────────────
@@ -88,15 +121,18 @@ async def stats(username: str, pool=Depends(get_pool)):
 @router.post("/games")
 async def create_game(body: CreateGameBody, pool=Depends(get_pool)):
     code = _gen_code()
-    while code in _rooms:
+    while await _room_exists(code):
         code = _gen_code()
-    _rooms[code] = {
-        "players": [],
-        "state": None,
-        "max": body.max_players,
+
+    meta = {
         "rules": body.rules,
+        "max": body.max_players,
         "started": False,
+        "state": None,
+        "players_meta": [],  # [{"username": str, "color": int}]
     }
+    await _set_room_meta(code, meta)
+
     async with pool.acquire() as conn:
         await conn.execute(
             "INSERT INTO poleana_games (code, rules, max_players) VALUES ($1, $2, $3)",
@@ -107,15 +143,15 @@ async def create_game(body: CreateGameBody, pool=Depends(get_pool)):
 
 @router.get("/games/{code}")
 async def get_game(code: str):
-    room = _rooms.get(code.upper())
-    if not room:
+    meta = await _get_room_meta(code.upper())
+    if not meta:
         raise HTTPException(404, "Sala no encontrada o expirada")
     return {
         "code": code.upper(),
-        "rules": room["rules"],
-        "max_players": room["max"],
-        "players": [{"username": p["username"], "color": p["color"]} for p in room["players"]],
-        "started": room["started"],
+        "rules": meta["rules"],
+        "max_players": meta["max"],
+        "players": meta["players_meta"],
+        "started": meta["started"],
     }
 
 
@@ -123,8 +159,8 @@ async def get_game(code: str):
 @router.websocket("/ws/{code}")
 async def ws_game(websocket: WebSocket, code: str, token: str = ""):
     code = code.upper()
-    room = _rooms.get(code)
-    if not room:
+    meta = await _get_room_meta(code)
+    if not meta:
         await websocket.close(code=4004, reason="Sala no encontrada")
         return
 
@@ -140,37 +176,43 @@ async def ws_game(websocket: WebSocket, code: str, token: str = ""):
         await websocket.close(code=4001, reason="Token inválido")
         return
 
-    if room["started"] and not any(p["username"] == username for p in room["players"]):
+    conns = _connections.setdefault(code, [])
+
+    if meta["started"] and not any(p["username"] == username for p in meta["players_meta"]):
         await websocket.close(code=4003, reason="Partida ya iniciada")
         return
 
-    if len(room["players"]) >= room["max"] and not any(p["username"] == username for p in room["players"]):
+    if len(conns) >= meta["max"] and not any(p["username"] == username for p in conns):
         await websocket.close(code=4002, reason="Sala llena")
         return
 
     await websocket.accept()
 
     # Rejoin or new join
-    existing = next((p for p in room["players"] if p["username"] == username), None)
-    if existing:
-        existing["ws"] = websocket
-        color_idx = existing["color"]
+    existing_conn = next((p for p in conns if p["username"] == username), None)
+    if existing_conn:
+        existing_conn["ws"] = websocket
+        color_idx = existing_conn["color"]
     else:
-        color_idx = len(room["players"])
-        room["players"].append({"username": username, "color": color_idx, "ws": websocket})
+        color_idx = len(conns)
+        conns.append({"username": username, "color": color_idx, "ws": websocket})
+        # Actualizar players_meta en Redis si es jugador nuevo
+        if not any(p["username"] == username for p in meta["players_meta"]):
+            meta["players_meta"].append({"username": username, "color": color_idx})
+            await _set_room_meta(code, meta)
 
-    # Send current state to (re)joining player
-    if room["state"]:
-        await websocket.send_text(json.dumps({"type": "STATE", "state": room["state"], "actor": None}))
+    # Enviar estado actual al jugador que (re)conecta
+    if meta["state"]:
+        await websocket.send_text(json.dumps({"type": "STATE", "state": meta["state"], "actor": None}))
 
-    await _broadcast(room, {
+    await _broadcast(conns, {
         "type": "JOINED",
         "username": username,
         "color": COLORS[color_idx],
         "color_idx": color_idx,
-        "count": len(room["players"]),
-        "max": room["max"],
-        "players": [{"username": p["username"], "color": p["color"]} for p in room["players"]],
+        "count": len(conns),
+        "max": meta["max"],
+        "players": meta["players_meta"],
     })
 
     try:
@@ -179,25 +221,27 @@ async def ws_game(websocket: WebSocket, code: str, token: str = ""):
             msg = json.loads(raw)
             mtype = msg.get("type")
 
-            if mtype == "START" and not room["started"]:
-                if len(room["players"]) < 2:
+            if mtype == "START" and not meta["started"]:
+                if len(conns) < 2:
                     await websocket.send_text(json.dumps({"type": "ERROR", "msg": "Mínimo 2 jugadores"}))
                     continue
-                room["started"] = True
-                await _broadcast(room, {
+                meta["started"] = True
+                await _set_room_meta(code, meta)
+                await _broadcast(conns, {
                     "type": "GAME_START",
-                    "rules": room["rules"],
-                    "players": [{"username": p["username"], "color": p["color"]} for p in room["players"]],
+                    "rules": meta["rules"],
+                    "players": meta["players_meta"],
                 })
 
             elif mtype == "STATE":
                 state = msg.get("state", {})
                 turn = state.get("turn", 0)
-                if turn < len(room["players"]) and room["players"][turn]["username"] != username:
+                if turn < len(meta["players_meta"]) and meta["players_meta"][turn]["username"] != username:
                     await websocket.send_text(json.dumps({"type": "ERROR", "msg": "No es tu turno"}))
                     continue
-                room["state"] = state
-                await _broadcast_except(room, websocket, {
+                meta["state"] = state
+                await _set_room_meta(code, meta)
+                await _broadcast_except(conns, websocket, {
                     "type": "STATE",
                     "state": state,
                     "actor": username,
@@ -205,31 +249,33 @@ async def ws_game(websocket: WebSocket, code: str, token: str = ""):
 
             elif mtype == "CHAT":
                 text = str(msg.get("text", ""))[:200]
-                await _broadcast(room, {"type": "CHAT", "username": username, "text": text})
+                await _broadcast(conns, {"type": "CHAT", "username": username, "text": text})
 
             elif mtype == "GAME_OVER":
                 winner = msg.get("winner", "")
-                room["started"] = False
-                room["state"] = None
-                await _broadcast(room, {"type": "GAME_OVER", "winner": winner})
+                meta["started"] = False
+                meta["state"] = None
+                await _set_room_meta(code, meta)
+                await _broadcast(conns, {"type": "GAME_OVER", "winner": winner})
 
     except WebSocketDisconnect:
         pass
     finally:
-        # Keep slot but mark ws as None (allow rejoin)
-        for p in room["players"]:
+        # Marcar ws como None para permitir rejoin
+        for p in conns:
             if p["ws"] is websocket:
                 p["ws"] = None
-        active = [p for p in room["players"] if p["ws"] is not None]
+        active = [p for p in conns if p["ws"] is not None]
         if not active:
-            _rooms.pop(code, None)
+            _connections.pop(code, None)
+            await _del_room_meta(code)
         else:
-            await _broadcast(room, {"type": "LEFT", "username": username, "count": len(active)})
+            await _broadcast(conns, {"type": "LEFT", "username": username, "count": len(active)})
 
 
-async def _broadcast(room: dict, msg: dict):
+async def _broadcast(conns: list, msg: dict):
     payload = json.dumps(msg)
-    for p in room["players"]:
+    for p in conns:
         if p["ws"]:
             try:
                 await p["ws"].send_text(payload)
@@ -237,9 +283,9 @@ async def _broadcast(room: dict, msg: dict):
                 p["ws"] = None
 
 
-async def _broadcast_except(room: dict, exclude: WebSocket, msg: dict):
+async def _broadcast_except(conns: list, exclude: WebSocket, msg: dict):
     payload = json.dumps(msg)
-    for p in room["players"]:
+    for p in conns:
         if p["ws"] and p["ws"] is not exclude:
             try:
                 await p["ws"].send_text(payload)

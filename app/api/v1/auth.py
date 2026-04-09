@@ -6,7 +6,7 @@ Tabla: usuarios (email, password_hash, nombre, roles…)
 Cifrado: email_cifrado y phone_cifrado vía core.crypto (AES-256-GCM).
 Respuesta: {token, conductor_id, nombre} — compatible con la PWA actual.
 """
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 from jose import JWTError
@@ -19,6 +19,7 @@ from email.mime.multipart import MIMEMultipart
 from services.database import get_pool
 from services.auth_service import hash_password, verify_password, create_token, decode_token
 from core.crypto import encrypt_value
+from core.limiter import limiter
 
 router = APIRouter()
 
@@ -108,7 +109,8 @@ async def me(
 # ── /auth/register ────────────────────────────────────────────────────────────
 
 @router.post("/auth/register", status_code=201)
-async def register(body: RegistroBody, pool=Depends(get_pool)):
+@limiter.limit("3/minute")
+async def register(request: Request, body: RegistroBody, pool=Depends(get_pool)):
     """
     Registra un nuevo conductor.
     email y phone se guardan en texto plano (lookup/unique) + cifrado AES-256.
@@ -157,7 +159,8 @@ async def register(body: RegistroBody, pool=Depends(get_pool)):
 # ── /auth/login ───────────────────────────────────────────────────────────────
 
 @router.post("/auth/login")
-async def login(body: LoginBody, pool=Depends(get_pool)):
+@limiter.limit("5/minute")
+async def login(request: Request, body: LoginBody, pool=Depends(get_pool)):
     """Login por email + contraseña. Devuelve JWT compatible con la PWA."""
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -187,7 +190,8 @@ class ForgotBody(BaseModel):
 
 
 @router.post("/auth/forgot-password")
-async def forgot_password(body: ForgotBody, pool=Depends(get_pool)):
+@limiter.limit("3/hour")
+async def forgot_password(request: Request, body: ForgotBody, pool=Depends(get_pool)):
     """Genera token de recuperación (Redis TTL 1h) y envía email si SMTP está configurado."""
     import redis.asyncio as aioredis
     email_norm = body.email.lower().strip()

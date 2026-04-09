@@ -47,11 +47,6 @@ services:
     env_file: .env
     ports:
       - "8000:8000"
-    volumes:
-      - ./secrets:/app/secrets:ro
-    environment:
-      - JWT_PRIVATE_KEY_FILE=/app/secrets/private.pem
-      - JWT_PUBLIC_KEY_FILE=/app/secrets/public.pem
     depends_on:
       postgres:
         condition: service_healthy

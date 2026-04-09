@@ -274,6 +274,27 @@
       overflow-y: auto;
       min-height: 0;
     }
+    .gps-section {
+      padding: 14px 18px 8px;
+      border-top: 1px solid var(--border, #1e2d45);
+    }
+    .gps-toggle-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background: var(--accent, #00e5ff);
+      color: #0a1220;
+      font-weight: 700;
+      border: none;
+      font-size: .9rem;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background .2s;
+    }
+    .analitica-header {
+      background: var(--surface, #1a2234);
+      border-bottom: 1px solid var(--border, #1e2d45);
+    }
     .section-title {
       font-size: .5rem;
       text-transform: uppercase;
@@ -1348,6 +1369,7 @@
     <div class="tab active" onclick="switchTab('dashboard')">🚕 Jornada</div>
     <div class="tab" onclick="switchTab('vehiculo')">🔧 Vehículo</div>
     <div class="tab" onclick="switchTab('mapa')">🗺️ Mapa</div>
+    <div class="tab" onclick="switchTab('analitica')">📊 Analítica</div>
   </div>
 
   <!-- SCREEN: DASHBOARD -->
@@ -1405,6 +1427,14 @@
     <div id="tripsList">
       <div class="empty-state">Sin viajes registrados aún</div>
     </div>
+  </div>
+
+  <!-- GPS TRACKING -->
+  <div class="gps-section" id="gpsSection">
+    <div class="section-title">GPS Tracking</div>
+    <button class="gps-toggle-btn" id="btnGps" onclick="toggleGps()">Iniciar GPS</button>
+    <div id="gpsDashboardContainer"></div>
+    <div id="mapaRutaActiva" style="height:200px;border-radius:10px;overflow:hidden;display:none;margin-top:8px"></div>
   </div>
 
   </div><!-- /screen-dashboard -->
@@ -1565,6 +1595,28 @@
     <button class="mapa-fab" id="mapaFab" style="display:none" onclick="abrirImport()">+ Importar</button>
 
   </div><!-- /screen-mapa -->
+
+  <!-- SCREEN: ANALÍTICA 3D -->
+  <div class="screen" id="screen-analitica">
+    <div class="analitica-header">
+      <div class="section-title" style="padding:12px 12px 4px">Analítica de Rutas</div>
+      <div style="padding:0 12px 12px">
+        <select id="selectJornada" style="width:100%;padding:8px;border-radius:8px;background:var(--surface,#1a2234);color:var(--text,#e0e6f0);border:1px solid #2a3550;font-size:.9rem;margin-bottom:8px">
+          <option value="">Selecciona una jornada…</option>
+        </select>
+        <button onclick="cargarAnalisis3D()" style="width:100%;padding:12px;border-radius:8px;background:var(--accent,#00e5ff);color:#0a1220;font-weight:700;border:none;font-size:.95rem;cursor:pointer">
+          Cargar vista 3D
+        </button>
+      </div>
+    </div>
+    <div id="mapLibreContainer" style="height:55vh;width:100%;position:relative;background:#0a1220">
+      <canvas id="deckCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></canvas>
+      <div id="analiticaEmpty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#4a5568;font-size:.9rem;text-align:center;padding:24px">
+        <div style="font-size:2.5rem;margin-bottom:12px">📍</div>
+        <div>Selecciona una jornada y pulsa<br><strong>Cargar vista 3D</strong></div>
+      </div>
+    </div>
+  </div><!-- /screen-analitica -->
 
   <!-- MODAL IMPORT -->
   <div class="import-overlay" id="importOverlay" onclick="cerrarImportSiOverlay(event)">
@@ -1972,7 +2024,7 @@
   // ── TABS ─────────────────────────────────────────────────
   function switchTab(name) {
     document.querySelectorAll('.tab').forEach((t, i) => {
-      t.classList.toggle('active', ['dashboard','vehiculo','mapa'][i] === name);
+      t.classList.toggle('active', ['dashboard','vehiculo','mapa','analitica'][i] === name);
     });
     document.querySelectorAll('.screen').forEach(s => {
       s.classList.toggle('active', s.id === 'screen-' + name);
@@ -1991,6 +2043,7 @@
         initMapa();
       }, 50);
     }
+    if (name === 'analitica') cargarJornadasSelector();
   }
 
   // ── VEHÍCULO ─────────────────────────────────────────────
@@ -2729,7 +2782,188 @@
     document.getElementById("btnHelp").classList.remove("active");
     document.getElementById("cmdInput").focus();
   }
+
+  // ── GPS TRACKING ─────────────────────────────────────────
+  let _miniMapa = null;
+  let _rutaPolyline = null;
+
+  async function toggleGps() {
+    const token = getToken();
+    if (!token) { showToast('Inicia sesión primero'); return; }
+    if (typeof GpsDashboard === 'undefined') { showToast('Módulo GPS no disponible'); return; }
+    const btn = $('btnGps');
+    if (!GpsDashboard.getState().activo) {
+      try {
+        const res = await fetch(`${API}/resumen`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) { showToast('No hay jornada activa'); return; }
+        const data = await res.json();
+        const jornadaId = data.jornada_id;
+        if (!jornadaId) { showToast('Inicia una jornada primero'); return; }
+        await GpsDashboard.iniciarGps(token, jornadaId);
+        GpsDashboard.renderDashboardGps('gpsDashboardContainer');
+        GpsDashboard.subscribeGps(actualizarMiniMapa);
+        btn.textContent = 'Detener GPS';
+        btn.style.background = 'var(--danger,#e05555)';
+        showToast('GPS iniciado');
+      } catch(e) {
+        showToast('Error al iniciar GPS: ' + e.message);
+      }
+    } else {
+      await GpsDashboard.detenerGps(token);
+      btn.textContent = 'Iniciar GPS';
+      btn.style.background = '';
+      showToast('GPS detenido');
+    }
+  }
+
+  function actualizarMiniMapa(estado) {
+    const container = $('mapaRutaActiva');
+    if (!container) return;
+    container.style.display = 'block';
+    if (!_miniMapa) {
+      _miniMapa = L.map('mapaRutaActiva', { zoomControl: false, attributionControl: false });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd', maxZoom: 19
+      }).addTo(_miniMapa);
+    }
+    if (_rutaPolyline) _miniMapa.removeLayer(_rutaPolyline);
+    const coords = (estado.puntos || []).map(p => [p.lat, p.lng]);
+    if (coords.length > 0) {
+      _rutaPolyline = L.polyline(coords, { color: '#00e5ff', weight: 3 }).addTo(_miniMapa);
+      _miniMapa.fitBounds(_rutaPolyline.getBounds(), { padding: [10, 10] });
+    }
+  }
+
+  // ── ANALÍTICA 3D (MapLibre + deck.gl lazy load) ──────────
+  let _deckInstance = null;
+  let _mlMap = null;
+
+  async function cargarJornadasSelector() {
+    const token = getToken();
+    if (!token) return;
+    const sel = $('selectJornada');
+    if (sel.options.length > 1) return; // ya poblado
+    try {
+      const res = await fetch(`${API}/gps/resumen-jornadas`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) return;
+      const lista = await res.json();
+      lista.forEach(j => {
+        const opt = document.createElement('option');
+        opt.value = j.jornada_id;
+        opt.textContent = `${j.fecha} — ${j.total_puntos} puntos (${j.estado})`;
+        sel.appendChild(opt);
+      });
+    } catch(e) { /* sin conexión */ }
+  }
+
+  async function cargarAnalisis3D() {
+    const jornadaId = $('selectJornada').value;
+    if (!jornadaId) { showToast('Selecciona una jornada'); return; }
+    const token = getToken();
+    if (!token) { showToast('Inicia sesión primero'); return; }
+    $('analiticaEmpty').style.display = 'none';
+    showToast('Cargando librerías 3D…');
+
+    let MapLibreModule, DeckModule, LayersModule;
+    try {
+      [MapLibreModule, DeckModule, LayersModule] = await Promise.all([
+        import('https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.esm.min.js'),
+        import('https://cdn.jsdelivr.net/npm/@deck.gl/core@9.0.0/dist/index.js'),
+        import('https://cdn.jsdelivr.net/npm/@deck.gl/layers@9.0.0/dist/index.js'),
+      ]);
+    } catch(e) {
+      showToast('Error cargando librerías 3D');
+      $('analiticaEmpty').style.display = 'flex';
+      return;
+    }
+
+    let gpsData;
+    try {
+      const res = await fetch(`${API}/gps/historial/${jornadaId}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) { showToast('Sin datos GPS para esta jornada'); return; }
+      gpsData = await res.json();
+    } catch(e) {
+      showToast('Error obteniendo datos GPS');
+      return;
+    }
+
+    if (!gpsData.puntos || gpsData.puntos.length === 0) {
+      showToast('Esta jornada no tiene puntos GPS');
+      $('analiticaEmpty').style.display = 'flex';
+      return;
+    }
+
+    showToast('Renderizando mapa 3D…');
+
+    const { Map } = MapLibreModule;
+    const { Deck } = DeckModule;
+    const { PathLayer, ScatterplotLayer } = LayersModule;
+
+    // Destruir instancias previas
+    if (_mlMap) { _mlMap.remove(); _mlMap = null; }
+    if (_deckInstance) { _deckInstance.finalize(); _deckInstance = null; }
+
+    const centro = gpsData.puntos[Math.floor(gpsData.puntos.length / 2)];
+
+    _mlMap = new Map({
+      container: 'mapLibreContainer',
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      center: [centro.lng, centro.lat],
+      zoom: 13,
+      interactive: true,
+    });
+
+    _mlMap.on('load', () => {
+      const pathData = [{ path: gpsData.puntos.map(p => [p.lng, p.lat]) }];
+      const ptData = gpsData.puntos;
+
+      _deckInstance = new Deck({
+        canvas: 'deckCanvas',
+        initialViewState: { longitude: centro.lng, latitude: centro.lat, zoom: 13, pitch: 45 },
+        controller: false,
+        onViewStateChange: ({ viewState }) => {
+          _mlMap.jumpTo({
+            center: [viewState.longitude, viewState.latitude],
+            zoom: viewState.zoom,
+            bearing: viewState.bearing,
+            pitch: viewState.pitch,
+          });
+        },
+        layers: [
+          new PathLayer({
+            id: 'ruta',
+            data: pathData,
+            getPath: d => d.path,
+            getColor: [0, 229, 255],
+            getWidth: 4,
+            widthMinPixels: 2,
+          }),
+          new ScatterplotLayer({
+            id: 'puntos',
+            data: ptData,
+            getPosition: d => [d.lng, d.lat],
+            getRadius: 5,
+            getFillColor: d => {
+              const v = d.vel_kmh || 0;
+              if (v > 60) return [229, 85, 85];
+              if (v > 30) return [245, 166, 35];
+              return [34, 165, 90];
+            },
+            radiusMinPixels: 3,
+          }),
+        ],
+      });
+      showToast(`${gpsData.total_puntos} puntos GPS renderizados`);
+    });
+  }
 </script>
+<script src="/yaga/GpsDashboard.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 </body>

@@ -15,6 +15,8 @@ from models.usuario import Usuario
 from services.gps_service import (
     batch_insert_gps,
     cerrar_jornada_con_gps,
+    get_gps_historial,
+    get_resumen_jornadas_con_gps,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,6 +61,26 @@ class CierreJornadaResponse(BaseModel):
     eficiencia_mxn_km: Optional[float]
 
 
+class GPSPuntoDescifrado(BaseModel):
+    lat: float
+    lng: float
+    vel_kmh: Optional[float]
+    ts: str
+
+
+class GPSHistorialResponse(BaseModel):
+    jornada_id: str
+    puntos: List[GPSPuntoDescifrado]
+    total_puntos: int
+
+
+class JornadaGPSResumen(BaseModel):
+    jornada_id: str
+    fecha: str
+    estado: str
+    total_puntos: int
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @router.post(
@@ -93,6 +115,55 @@ async def gps_batch(
     except Exception as e:
         logger.error("Error GPS batch: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno al registrar GPS")
+
+
+@router.get(
+    "/api/v1/gps/historial/{jornada_id}",
+    response_model=GPSHistorialResponse,
+    summary="Puntos GPS descifrados de una jornada para visualización",
+    tags=["GPS"],
+)
+async def gps_historial(
+    jornada_id: str,
+    current_user: Usuario = Depends(get_current_user),
+):
+    """
+    Devuelve los puntos GPS descifrados de una jornada específica.
+    Valida que la jornada pertenezca al conductor autenticado.
+    Las coordenadas se descifran en memoria — nunca persisten en claro.
+    """
+    try:
+        puntos = await get_gps_historial(jornada_id, str(current_user.id))
+        return GPSHistorialResponse(
+            jornada_id=jornada_id,
+            puntos=puntos,
+            total_puntos=len(puntos),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error("Error GPS historial: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Error interno al obtener historial GPS")
+
+
+@router.get(
+    "/api/v1/gps/resumen-jornadas",
+    response_model=List[JornadaGPSResumen],
+    summary="Jornadas con GPS registrado (sin coordenadas)",
+    tags=["GPS"],
+)
+async def gps_resumen_jornadas(
+    current_user: Usuario = Depends(get_current_user),
+):
+    """
+    Retorna metadatos de jornadas que tienen puntos GPS.
+    Sin coordenadas — para poblar el selector de la vista Analítica.
+    """
+    try:
+        return await get_resumen_jornadas_con_gps(str(current_user.id))
+    except Exception as e:
+        logger.error("Error GPS resumen jornadas: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Error interno al obtener resumen de jornadas")
 
 
 @router.post(

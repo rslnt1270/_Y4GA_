@@ -5,6 +5,9 @@ YAGA PROJECT - API Principal v0.5.0
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from core.limiter import limiter
 from api.v1.nlp import router as nlp_router
 from api.v1.vehiculo import router as vehiculo_router
 from api.v1.auth import router as auth_router
@@ -13,10 +16,6 @@ from api.v1.gps import router as gps_router
 from services.database import get_pool, close_pool
 from api.poleana_router import router as poleana_router
 from dependencies import get_current_user
-# TODO: Sistema B (RS256) deshabilitado — usa pgp_sym_encrypt (prohibido) y SQLAlchemy sync.
-#       Reactivar solo tras migrar a app.core.crypto + asyncpg.
-# from routers.auth import router as auth_router_new
-# from routers.consentimientos import router as consentimientos_router
 
 
 @asynccontextmanager
@@ -33,6 +32,9 @@ app = FastAPI(
     docs_url="/api/docs",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,

@@ -2,6 +2,7 @@
 """
 YAGA PROJECT - API Principal v0.5.0
 """
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from core.logging import setup_logging, get_logger
@@ -32,11 +33,15 @@ async def lifespan(app: FastAPI):
     await close_pool()
 
 
+_is_prod = os.getenv("ENVIRONMENT", "development").lower() == "production"
+
 app = FastAPI(
     title="YAGA - Asistente para Conductores",
     description="Registra tus viajes y gastos con comandos de voz. GPS tracking cifrado AES-256.",
     version="0.5.0",
-    docs_url="/api/docs",
+    docs_url=None if _is_prod else "/api/docs",
+    redoc_url=None if _is_prod else "/api/redoc",
+    openapi_url=None if _is_prod else "/api/openapi.json",
     lifespan=lifespan,
 )
 

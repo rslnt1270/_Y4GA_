@@ -161,6 +161,29 @@
       padding: 16px;
       margin-bottom: 12px;
     }
+    .consent-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.72);
+      z-index: 9000;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .consent-overlay.active { display: flex; }
+    .consent-sheet {
+      max-width: 420px; width: 100%;
+      max-height: 90vh; overflow-y: auto;
+      margin: 0;
+    }
+    .consent-row {
+      display: flex; gap: 12px;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .consent-row:last-of-type { border-bottom: none; }
+    .consent-title { font-weight: 700; color: #fff; font-size: 14px; }
+    .consent-desc { color: #aaa; font-size: 12px; margin-top: 2px; line-height: 1.35; }
     .arco-section h3 {
       margin: 0 0 12px;
       font-size: .82rem;
@@ -1751,6 +1774,7 @@
         <span class="label">Investigación</span>
         <label class="arco-toggle"><input type="checkbox" id="toggleInvestigacion" onchange="arcoOposicion('investigacion', this.checked)"><span></span></label>
       </div>
+      <button class="arco-btn" style="margin-top:10px" onclick="abrirModalConsentimientos()">Administrar por canal</button>
     </div>
     <!-- Sección: Cancelar cuenta -->
     <div class="arco-section">
@@ -1759,6 +1783,43 @@
       <button class="arco-btn danger" onclick="arcoCancelar()">Eliminar mi cuenta</button>
     </div>
   </div><!-- /screen-arco -->
+
+  <!-- MODAL CONSENTIMIENTOS GRANULARES -->
+  <div class="consent-overlay" id="consentOverlay" onclick="cerrarConsentSiOverlay(event)">
+    <div class="consent-sheet arco-section">
+      <h3>Tus consentimientos</h3>
+      <p style="color:#aaa;font-size:13px;margin:6px 0 14px">Elige cómo quieres que tratemos tus datos. Puedes cambiar esto cuando quieras.</p>
+
+      <div class="consent-row">
+        <label class="arco-toggle"><input type="checkbox" id="cnsOp" checked disabled><span></span></label>
+        <div>
+          <div class="consent-title">Operación</div>
+          <div class="consent-desc">Necesario para tu cuenta, pagos y registros fiscales. No se puede revocar mientras la cuenta esté activa.</div>
+        </div>
+      </div>
+
+      <div class="consent-row">
+        <label class="arco-toggle"><input type="checkbox" id="cnsMkt"><span></span></label>
+        <div>
+          <div class="consent-title">Marketing</div>
+          <div class="consent-desc">Promociones y comunicaciones. Puedes revocar cuando quieras.</div>
+        </div>
+      </div>
+
+      <div class="consent-row">
+        <label class="arco-toggle"><input type="checkbox" id="cnsInv"><span></span></label>
+        <div>
+          <div class="consent-title">Investigación</div>
+          <div class="consent-desc">Análisis agregado para mejorar el servicio. Datos anonimizados.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="arco-btn" onclick="guardarConsentimientos()">Guardar</button>
+        <button class="arco-btn" style="background:#333" onclick="cerrarModalConsentimientos()">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL IMPORT -->
   <div class="import-overlay" id="importOverlay" onclick="cerrarImportSiOverlay(event)">
@@ -2474,6 +2535,56 @@
     }
   }
 
+  // ── Modal consentimientos granulares (Sprint 8 W2) ──────────────────────
+  let _consentInitial = { marketing: false, investigacion: false };
+
+  async function abrirModalConsentimientos() {
+    try {
+      const res = await apiFetch('/consentimientos');
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        _consentInitial.marketing     = items.some(c => c.finalidad === 'marketing'     && c.estado);
+        _consentInitial.investigacion = items.some(c => c.finalidad === 'investigacion' && c.estado);
+      }
+    } catch (e) { /* prefill con defaults */ }
+    $('cnsMkt').checked = _consentInitial.marketing;
+    $('cnsInv').checked = _consentInitial.investigacion;
+    $('consentOverlay').classList.add('active');
+  }
+
+  function cerrarModalConsentimientos() {
+    $('consentOverlay').classList.remove('active');
+  }
+
+  function cerrarConsentSiOverlay(ev) {
+    if (ev.target.id === 'consentOverlay') cerrarModalConsentimientos();
+  }
+
+  async function guardarConsentimientos() {
+    const nuevos = {
+      marketing:     $('cnsMkt').checked,
+      investigacion: $('cnsInv').checked,
+    };
+    const cambios = [];
+    for (const [finalidad, estado] of Object.entries(nuevos)) {
+      if (_consentInitial[finalidad] !== estado) {
+        cambios.push({ finalidad, estado });
+      }
+    }
+    if (cambios.length === 0) { cerrarModalConsentimientos(); return; }
+    try {
+      await Promise.all(cambios.map(c =>
+        apiFetch('/consentimientos', { method: 'POST', body: JSON.stringify(c) })
+      ));
+      _consentInitial = { ...nuevos };
+      showToast('Consentimientos guardados');
+      cerrarModalConsentimientos();
+    } catch (e) {
+      showToast('Error al guardar');
+    }
+  }
+
   async function arcoCancelar() {
     if (!confirm('¿Seguro? Esta acción anonimizará tus datos personales y no se puede deshacer.')) return;
     if (!confirm('Confirma: todos tus datos personales serán eliminados.')) return;
@@ -2832,6 +2943,7 @@
       document.getElementById("authScreen").classList.add("hidden");
       initUserMenu();
       fetchResumen();
+      setTimeout(() => { try { abrirModalConsentimientos(); } catch(_) {} }, 400);
     } catch(e) { setAuthError("regError", "Sin conexión"); }
     finally { btn.disabled = false; btn.textContent = "Crear cuenta"; }
   }

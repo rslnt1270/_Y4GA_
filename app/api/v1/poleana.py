@@ -13,6 +13,14 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from pydantic import BaseModel
 from services.database import get_pool
 from services.auth_service import hash_password, verify_password, create_token, decode_token
+from services.poleana_engine_adapter import (
+    init_game_state,
+    apply_roll,
+    apply_move,
+    state_to_redis,
+    state_from_redis,
+    state_to_public_dict,
+)
 from core.redis import redis_client
 
 router = APIRouter(prefix="/api/v1/poleana", tags=["Poleana"])
@@ -201,9 +209,18 @@ async def ws_game(websocket: WebSocket, code: str, token: str = ""):
             meta["players_meta"].append({"username": username, "color": color_idx})
             await _set_room_meta(code, meta)
 
-    # Enviar estado actual al jugador que (re)conecta
-    if meta["state"]:
-        await websocket.send_text(json.dumps({"type": "STATE", "state": meta["state"], "actor": None}))
+    # Enviar estado actual al jugador que (re)conecta (server-authoritative)
+    game_state_raw = meta.get("game_state")
+    if game_state_raw:
+        try:
+            gs = state_from_redis(game_state_raw)
+            await websocket.send_text(json.dumps({
+                "type": "STATE",
+                "state": state_to_public_dict(gs),
+                "actor": None,
+            }))
+        except Exception:
+            pass
 
     await _broadcast(conns, {
         "type": "JOINED",
@@ -225,38 +242,103 @@ async def ws_game(websocket: WebSocket, code: str, token: str = ""):
                 if len(conns) < 2:
                     await websocket.send_text(json.dumps({"type": "ERROR", "msg": "Mínimo 2 jugadores"}))
                     continue
+                # Inicializar estado del juego SERVER-AUTHORITATIVE
+                gs = init_game_state(len(meta["players_meta"]), meta["rules"])
                 meta["started"] = True
+                meta["game_state"] = state_to_redis(gs)
                 await _set_room_meta(code, meta)
                 await _broadcast(conns, {
                     "type": "GAME_START",
                     "rules": meta["rules"],
                     "players": meta["players_meta"],
+                    "state": state_to_public_dict(gs),
                 })
 
             elif mtype == "STATE":
-                state = msg.get("state", {})
-                turn = state.get("turn", 0)
-                if turn < len(meta["players_meta"]) and meta["players_meta"][turn]["username"] != username:
-                    await websocket.send_text(json.dumps({"type": "ERROR", "msg": "No es tu turno"}))
+                # Bloqueado: server-authoritative. El cliente no puede enviar estado.
+                await websocket.send_text(json.dumps({
+                    "type": "ERROR", "msg": "Tipo de mensaje no permitido"
+                }))
+                continue
+
+            elif mtype == "GAME_OVER":
+                # Bloqueado: solo el servidor declara ganadores.
+                await websocket.send_text(json.dumps({
+                    "type": "ERROR", "msg": "Tipo de mensaje no permitido"
+                }))
+                continue
+
+            elif mtype == "ROLL":
+                if not meta.get("started") or not meta.get("game_state"):
+                    await websocket.send_text(json.dumps({"type": "ERROR", "msg": "Partida no iniciada"}))
                     continue
-                meta["state"] = state
+                # Identificar jug_id desde username
+                jug_id = next(
+                    (p["color"] for p in meta["players_meta"] if p["username"] == username),
+                    None,
+                )
+                if jug_id is None:
+                    await websocket.send_text(json.dumps({"type": "ERROR", "msg": "No eres jugador de esta sala"}))
+                    continue
+                gs = state_from_redis(meta["game_state"])
+                gs, result = apply_roll(gs, jug_id)
+                if not result.get("ok"):
+                    await websocket.send_text(json.dumps({"type": "ERROR", "msg": result.get("error", "Roll inválido")}))
+                    continue
+                meta["game_state"] = state_to_redis(gs)
                 await _set_room_meta(code, meta)
-                await _broadcast_except(conns, websocket, {
-                    "type": "STATE",
-                    "state": state,
+                await _broadcast(conns, {
+                    "type": "ROLL_RESULT",
                     "actor": username,
+                    "result": result,
+                    "state": state_to_public_dict(gs),
                 })
+
+            elif mtype == "MOVE":
+                if not meta.get("started") or not meta.get("game_state"):
+                    await websocket.send_text(json.dumps({"type": "ERROR", "msg": "Partida no iniciada"}))
+                    continue
+                jug_id = next(
+                    (p["color"] for p in meta["players_meta"] if p["username"] == username),
+                    None,
+                )
+                if jug_id is None:
+                    await websocket.send_text(json.dumps({"type": "ERROR", "msg": "No eres jugador de esta sala"}))
+                    continue
+                try:
+                    ficha_idx = int(msg.get("ficha_idx"))
+                    pasos = int(msg.get("pasos"))
+                except (TypeError, ValueError):
+                    await websocket.send_text(json.dumps({"type": "ERROR", "msg": "Parámetros inválidos"}))
+                    continue
+                gs = state_from_redis(meta["game_state"])
+                gs, result = apply_move(gs, jug_id, ficha_idx, pasos)
+                if not result.get("ok"):
+                    await websocket.send_text(json.dumps({"type": "ERROR", "msg": result.get("error", "Movimiento inválido")}))
+                    continue
+                meta["game_state"] = state_to_redis(gs)
+                # Si hay ganador → broadcast GAME_OVER (server-authoritative)
+                if gs.ganador:
+                    meta["started"] = False
+                    meta["game_state"] = None
+                    await _set_room_meta(code, meta)
+                    await _broadcast(conns, {
+                        "type": "GAME_OVER",
+                        "winner": gs.ganador,
+                        "actor": username,
+                    })
+                else:
+                    await _set_room_meta(code, meta)
+                    await _broadcast(conns, {
+                        "type": "STATE",
+                        "actor": username,
+                        "result": result,
+                        "state": state_to_public_dict(gs),
+                    })
 
             elif mtype == "CHAT":
                 text = str(msg.get("text", ""))[:200]
                 await _broadcast(conns, {"type": "CHAT", "username": username, "text": text})
-
-            elif mtype == "GAME_OVER":
-                winner = msg.get("winner", "")
-                meta["started"] = False
-                meta["state"] = None
-                await _set_room_meta(code, meta)
-                await _broadcast(conns, {"type": "GAME_OVER", "winner": winner})
 
     except WebSocketDisconnect:
         pass

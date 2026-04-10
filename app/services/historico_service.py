@@ -202,8 +202,8 @@ async def get_mapa_data(conductor_id: str) -> list:
                 "duracion":   float(r["duracion_min"]) if r["duracion_min"] else None,
                 "plataforma": r["plataforma"],
                 "origen":     r["origen"],
-                "lat":        float(r["lat"]),
-                "lng":        float(r["lng"]),
+                "lat":        round(float(r["lat"]), 4),
+                "lng":        round(float(r["lng"]), 4),
             }
             for r in rows
         ]

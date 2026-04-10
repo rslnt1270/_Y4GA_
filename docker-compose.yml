@@ -11,8 +11,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/00_schema.sql
       - ./infrastructure/database/migrations:/docker-entrypoint-initdb.d/migrations
-    ports:
-      - "5432:5432"
+    # Sin exposición de puerto al host — solo accesible dentro de la red Docker
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U yaga_user -d yaga_db"]
       interval: 10s
@@ -24,20 +23,25 @@ services:
       app.kubernetes.io/component: "database"
       app.kubernetes.io/part-of: "yaga"
 
-  redis:
-    image: redis:7-alpine
-    container_name: yaga_redis
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
-    ports:
-      - "6379:6379"
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: yaga_valkey
+    # Valkey: fork BSD 3-Clause de Redis — elimina riesgo de licencia SSPL y CVE-2025-49844
+    command: >
+      valkey-server
+      --requirepass ${VALKEY_PASSWORD}
+      --bind 0.0.0.0
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+    # Sin exposición de puerto al host — solo accesible dentro de la red Docker
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "-a", "${VALKEY_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     labels:
-      app.kubernetes.io/name: "redis"
+      app.kubernetes.io/name: "valkey"
       app.kubernetes.io/component: "cache"
       app.kubernetes.io/part-of: "yaga"
 
@@ -50,7 +54,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      valkey:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:

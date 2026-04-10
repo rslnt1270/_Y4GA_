@@ -20,6 +20,7 @@ from services.database import get_pool
 from services.auth_service import hash_password, verify_password, create_token, decode_token
 from core.crypto import encrypt_value
 from core.limiter import limiter
+from core.redis import redis_client
 
 router = APIRouter()
 
@@ -193,7 +194,6 @@ class ForgotBody(BaseModel):
 @limiter.limit("3/hour")
 async def forgot_password(request: Request, body: ForgotBody, pool=Depends(get_pool)):
     """Genera token de recuperación (Redis TTL 1h) y envía email si SMTP está configurado."""
-    import redis.asyncio as aioredis
     email_norm = body.email.lower().strip()
 
     async with pool.acquire() as conn:
@@ -207,11 +207,7 @@ async def forgot_password(request: Request, body: ForgotBody, pool=Depends(get_p
         return {"message": "Si el email está registrado, recibirás instrucciones en breve."}
 
     reset_token = secrets.token_urlsafe(32)
-    r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
-    try:
-        await r.setex(f"reset:{reset_token}", 3600, str(row["id"]))
-    finally:
-        await r.aclose()
+    await redis_client.setex(f"reset:{reset_token}", 3600, str(row["id"]))
 
     email_sent = _send_reset_email(email_norm, row["nombre"] or "", reset_token)
 
@@ -236,20 +232,13 @@ class ResetBody(BaseModel):
 @router.post("/auth/reset-password")
 async def reset_password(body: ResetBody, pool=Depends(get_pool)):
     """Valida el token de Redis y actualiza la contraseña."""
-    import redis.asyncio as aioredis
-
     if len(body.nueva_password) < 6:
         raise HTTPException(status_code=422, detail="La contraseña debe tener al menos 6 caracteres")
 
-    r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
-    try:
-        conductor_id = await r.get(f"reset:{body.token}")
-        if not conductor_id:
-            raise HTTPException(status_code=400, detail="Token inválido o expirado")
-        conductor_id = conductor_id.decode()
-        await r.delete(f"reset:{body.token}")  # token de un solo uso
-    finally:
-        await r.aclose()
+    conductor_id = await redis_client.get(f"reset:{body.token}")
+    if not conductor_id:
+        raise HTTPException(status_code=400, detail="Token inválido o expirado")
+    await redis_client.delete(f"reset:{body.token}")  # token de un solo uso
 
     nuevo_hash = hash_password(body.nueva_password)
     async with pool.acquire() as conn:

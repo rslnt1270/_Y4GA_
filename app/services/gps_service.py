@@ -18,6 +18,11 @@ from services.database import get_pool
 logger = logging.getLogger(__name__)
 
 
+def _truncar_coordenada(valor: float, decimales: int = 4) -> float:
+    """Reduce precisión a ~11 metros (4 decimales). Protege privacidad del domicilio."""
+    return round(valor, decimales)
+
+
 # ── GPS Batch Insert ──────────────────────────────────────────────────────────
 
 async def batch_insert_gps(
@@ -195,8 +200,8 @@ async def get_gps_historial(jornada_id: str, conductor_id: str) -> list:
     for r in gps_rows:
         try:
             puntos.append({
-                "lat": float(decrypt_value(bytes(r["lat_cifrado"]))),
-                "lng": float(decrypt_value(bytes(r["lng_cifrado"]))),
+                "lat": _truncar_coordenada(float(decrypt_value(bytes(r["lat_cifrado"])))),
+                "lng": _truncar_coordenada(float(decrypt_value(bytes(r["lng_cifrado"])))),
                 "vel_kmh": float(r["vel_kmh"]) if r["vel_kmh"] is not None else None,
                 "ts": r["ts"].isoformat(),
             })

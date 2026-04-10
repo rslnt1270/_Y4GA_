@@ -1,64 +1,135 @@
+# © YAGA Project — Todos los derechos reservados
+"""
+Endpoint NLP: procesa comandos de voz de conductores mexicanos.
+Sprint 6: diccionario ampliado, logging de comandos no reconocidos.
+"""
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from services.nlp.classifier import classify
-from services.nlp.intent_catalog import DriverIntent
+
+from core.logging import get_logger
+from dependencies import get_current_user
 from services.jornada_service import (
     cerrar_jornada,
     get_or_create_jornada,
     registrar_viaje,
     registrar_gasto,
     get_resumen_jornada,
-    get_comparativa
+    get_comparativa,
 )
-from dependencies import get_current_user
-from models.usuario import Usuario
+from services.nlp.classifier import classify
+from services.nlp.intent_catalog import DriverIntent
 
 router = APIRouter()
+logger = get_logger("yaga.nlp")
+
+# Intents que requieren guardar un gasto con categoría implícita
+_GASTO_INTENTS = {
+    DriverIntent.AGREGAR_GASOLINA,
+    DriverIntent.AGREGAR_COMIDA,
+    DriverIntent.AGREGAR_PEAJE,
+    DriverIntent.AGREGAR_ESTACIONAMIENTO,
+    DriverIntent.AGREGAR_GASTO_GENERAL,
+    DriverIntent.REGISTRAR_GASTO,
+}
+
+# Intents que registran un viaje (con método de pago)
+_VIAJE_INTENTS = {
+    DriverIntent.AGREGAR_EFECTIVO,
+    DriverIntent.AGREGAR_TARJETA,
+    DriverIntent.REGISTRAR_VIAJE,
+}
+
+# Intents de ciclo de viaje (solo acknowledgment, sin DB write aún)
+_CICLO_MSGS = {
+    DriverIntent.EN_CAMINO_RECOGER: "🚗 En camino a recoger al pasajero.",
+    DriverIntent.INICIAR_VIAJE:     "▶️ Viaje iniciado.",
+    DriverIntent.TERMINAR_VIAJE:    "🏁 Viaje terminado. ¿Cuánto fue?",
+}
+
 
 class CommandRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=500)
-    # conductor_id eliminado porque ahora se obtiene del token
+
 
 @router.post("/command")
 async def process_command(
     body: CommandRequest,
-    current_user: Usuario = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
+    conductor_id = str(current_user["id"])
     texto_limpio = body.text.lower()
-    
-    # 🔥 EL FINISHER: Interceptor de Cierre
+
+    # ── Interceptor de cierre (compatibilidad con comando explícito) ──────────
     if "cerrar" in texto_limpio and "jornada" in texto_limpio:
-        stats = await get_comparativa(str(current_user.id))
+        stats = await get_comparativa(conductor_id)
         estado = stats.get("comparativa", {}).get("estado", "Evaluando...")
-        await cerrar_jornada(str(current_user.id))
+        await cerrar_jornada(conductor_id)
         return {
             "intent": "cerrar_jornada",
             "message": f"🏁 Jornada Cerrada. {estado}",
-            "data": {"cerrada": True, "resumen": stats}
+            "data": {"cerrada": True, "resumen": stats},
         }
 
-    # Flujo Normal
+    # ── Clasificar ────────────────────────────────────────────────────────────
     result = classify(body.text)
     intent = result.intent
 
-    if intent == DriverIntent.UNKNOWN:
+    # ── Comando incompleto ────────────────────────────────────────────────────
+    if intent == DriverIntent.COMANDO_INCOMPLETO:
         return {
             "intent": intent.value,
-            "message": "❓ No entendí. Intenta: 'viaje uber efectivo 90' o 'gasolina 300'",
+            "message": f"❓ Falta el {result.missing}. Ejemplo: 'gasolina 300' o 'en efectivo 150'",
             "data": None,
         }
 
-    if intent == DriverIntent.CONSULTAR_RESUMEN:
-        resumen = await get_resumen_jornada(str(current_user.id))
+    # ── Comando no reconocido ─────────────────────────────────────────────────
+    if intent == DriverIntent.UNKNOWN:
+        return {
+            "intent": "comando_no_reconocido",
+            "message": "❓ No entendí. Intenta: 'viaje uber efectivo 90', 'gasolina 300', 'cuánto llevo'",
+            "data": None,
+        }
+
+    # ── Consultas ─────────────────────────────────────────────────────────────
+    if intent in (DriverIntent.CONSULTAR_RESUMEN, DriverIntent.CONSULTAR_TOTAL):
+        resumen = await get_resumen_jornada(conductor_id)
         return {
             "intent": intent.value,
             "message": "📊 Resumen de tu jornada",
             "data": resumen,
         }
 
-    jornada_id = await get_or_create_jornada(str(current_user.id))
+    # ── Jornada ───────────────────────────────────────────────────────────────
+    if intent == DriverIntent.INICIAR_JORNADA:
+        jornada_id = await get_or_create_jornada(conductor_id)
+        return {
+            "intent": intent.value,
+            "message": "✅ Jornada iniciada. ¡A ruletear!",
+            "data": {"jornada_id": jornada_id},
+        }
 
-    if intent == DriverIntent.REGISTRAR_VIAJE:
+    if intent in (DriverIntent.TERMINAR_JORNADA, DriverIntent.CERRAR_JORNADA):
+        stats = await get_comparativa(conductor_id)
+        estado = stats.get("comparativa", {}).get("estado", "Evaluando...")
+        await cerrar_jornada(conductor_id)
+        return {
+            "intent": intent.value,
+            "message": f"🏁 Jornada Cerrada. {estado}",
+            "data": {"cerrada": True, "resumen": stats},
+        }
+
+    # ── Ciclo de viaje (acknowledgment sin DB write) ──────────────────────────
+    if intent in _CICLO_MSGS:
+        return {
+            "intent": intent.value,
+            "message": _CICLO_MSGS[intent],
+            "data": None,
+        }
+
+    # ── Operaciones que requieren jornada activa ──────────────────────────────
+    jornada_id = await get_or_create_jornada(conductor_id)
+
+    if intent in _VIAJE_INTENTS:
         if result.entities.monto is None and not result.entities.propina:
             return {
                 "intent": intent.value,
@@ -72,7 +143,7 @@ async def process_command(
             "data": saved,
         }
 
-    if intent == DriverIntent.REGISTRAR_GASTO:
+    if intent in _GASTO_INTENTS:
         if not result.entities.monto:
             return {
                 "intent": intent.value,
@@ -86,10 +157,20 @@ async def process_command(
             "data": saved,
         }
 
+    # Fallback (intención reconocida pero sin handler)
+    logger.warning(f"Intent sin handler: {intent.value}")
+    return {
+        "intent": intent.value,
+        "message": "⚠️ Comando reconocido pero no implementado aún.",
+        "data": None,
+    }
+
+
 @router.get("/resumen")
-async def get_resumen(current_user: Usuario = Depends(get_current_user)):
-    return await get_resumen_jornada(str(current_user.id))
+async def get_resumen(current_user: dict = Depends(get_current_user)):
+    return await get_resumen_jornada(str(current_user["id"]))
+
 
 @router.get("/comparativa")
-async def comparativa_endpoint(current_user: Usuario = Depends(get_current_user)):
-    return await get_comparativa(str(current_user.id))
+async def comparativa_endpoint(current_user: dict = Depends(get_current_user)):
+    return await get_comparativa(str(current_user["id"]))

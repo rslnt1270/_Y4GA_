@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 from jose import JWTError
+import asyncio
 import secrets
 import smtplib
 import os
@@ -18,9 +19,23 @@ from email.mime.multipart import MIMEMultipart
 
 from services.database import get_pool
 from services.auth_service import hash_password, verify_password, create_token, decode_token
+from services.audit_service import log_action
 from core.crypto import encrypt_value
 from core.limiter import limiter
 from core.redis import redis_client
+
+
+def _client_ip(request: Request) -> str:
+    """Obtiene la IP real del cliente respetando X-Forwarded-For."""
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else ""
+
+
+def _client_ua(request: Request) -> str:
+    """Obtiene el User-Agent del cliente."""
+    return request.headers.get("user-agent", "")
 
 router = APIRouter()
 
@@ -150,6 +165,15 @@ async def register(request: Request, body: RegistroBody, pool=Depends(get_pool))
         )
 
     token = create_token(conductor_id, email_norm)
+
+    asyncio.create_task(log_action(
+        usuario_id=conductor_id,
+        accion="registro",
+        ip=_client_ip(request),
+        user_agent=_client_ua(request),
+        detalles={"email": email_norm},
+    ))
+
     return {
         "token": token,
         "conductor_id": conductor_id,
@@ -163,6 +187,10 @@ async def register(request: Request, body: RegistroBody, pool=Depends(get_pool))
 @limiter.limit("5/minute")
 async def login(request: Request, body: LoginBody, pool=Depends(get_pool)):
     """Login por email + contraseña. Devuelve JWT compatible con la PWA."""
+    email_norm = body.email.lower().strip()
+    ip = _client_ip(request)
+    ua = _client_ua(request)
+
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             """
@@ -170,13 +198,29 @@ async def login(request: Request, body: LoginBody, pool=Depends(get_pool)):
             FROM usuarios
             WHERE email = $1 AND deleted_at IS NULL
             """,
-            body.email.lower().strip(),
+            email_norm,
         )
 
     if not row or not verify_password(body.password, row["password_hash"]):
+        asyncio.create_task(log_action(
+            usuario_id=str(row["id"]) if row else None,
+            accion="login_fallido",
+            ip=ip,
+            user_agent=ua,
+            detalles={"email": email_norm},
+        ))
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
-    token = create_token(str(row["id"]), body.email.lower().strip())
+    token = create_token(str(row["id"]), email_norm)
+
+    asyncio.create_task(log_action(
+        usuario_id=str(row["id"]),
+        accion="login_exitoso",
+        ip=ip,
+        user_agent=ua,
+        detalles={"email": email_norm},
+    ))
+
     return {
         "token": token,
         "conductor_id": str(row["id"]),
@@ -204,7 +248,22 @@ async def forgot_password(request: Request, body: ForgotBody, pool=Depends(get_p
 
     # Respuesta genérica siempre — no revelar si el email existe
     if not row:
+        asyncio.create_task(log_action(
+            usuario_id=None,
+            accion="reset_password_solicitado",
+            ip=_client_ip(request),
+            user_agent=_client_ua(request),
+            detalles={"email": email_norm, "encontrado": False},
+        ))
         return {"message": "Si el email está registrado, recibirás instrucciones en breve."}
+
+    asyncio.create_task(log_action(
+        usuario_id=str(row["id"]),
+        accion="reset_password_solicitado",
+        ip=_client_ip(request),
+        user_agent=_client_ua(request),
+        detalles={"email": email_norm, "encontrado": True},
+    ))
 
     reset_token = secrets.token_urlsafe(32)
     await redis_client.setex(f"reset:{reset_token}", 3600, str(row["id"]))
@@ -230,7 +289,7 @@ class ResetBody(BaseModel):
 
 
 @router.post("/auth/reset-password")
-async def reset_password(body: ResetBody, pool=Depends(get_pool)):
+async def reset_password(request: Request, body: ResetBody, pool=Depends(get_pool)):
     """Valida el token de Redis y actualiza la contraseña."""
     if len(body.nueva_password) < 6:
         raise HTTPException(status_code=422, detail="La contraseña debe tener al menos 6 caracteres")
@@ -251,6 +310,15 @@ async def reset_password(body: ResetBody, pool=Depends(get_pool)):
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     token_jwt = create_token(str(row["id"]), row["email"])
+
+    asyncio.create_task(log_action(
+        usuario_id=str(row["id"]),
+        accion="reset_password_completado",
+        ip=_client_ip(request),
+        user_agent=_client_ua(request),
+        detalles={"email": row["email"]},
+    ))
+
     return {
         "message": "Contraseña actualizada correctamente",
         "token": token_jwt,

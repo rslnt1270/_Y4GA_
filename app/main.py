@@ -4,6 +4,10 @@ YAGA PROJECT - API Principal v0.5.0
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
+from core.logging import setup_logging, get_logger
+
+setup_logging()
+logger = get_logger("yaga.main")
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -13,6 +17,8 @@ from api.v1.vehiculo import router as vehiculo_router
 from api.v1.auth import router as auth_router
 from api.v1.historico import router as historico_router
 from api.v1.gps import router as gps_router
+from api.v1.arco import router as arco_router
+from api.v1.consentimientos import router as consentimientos_router
 from services.database import get_pool, close_pool
 from api.poleana_router import router as poleana_router
 from dependencies import get_current_user
@@ -21,6 +27,7 @@ from dependencies import get_current_user
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await get_pool()
+    logger.info("YAGA API iniciada — pool de conexiones listo")
     yield
     await close_pool()
 
@@ -50,6 +57,8 @@ app.include_router(vehiculo_router, prefix="/api/v1", tags=["Vehículo"])
 app.include_router(nlp_router, prefix="/api/v1", tags=["Comandos"])
 app.include_router(historico_router, prefix="/api/v1", tags=["Historico"])
 app.include_router(gps_router, tags=["GPS"])
+app.include_router(arco_router, prefix="/api/v1", tags=["ARCO"])
+app.include_router(consentimientos_router, prefix="/api/v1", tags=["Consentimientos"])
 app.include_router(poleana_router)
 # TODO: Sistema B deshabilitado por vulnerabilidad — ver Fix 6.1
 # app.include_router(auth_router_new)                     # autenticación JWT (/auth/...)

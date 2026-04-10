@@ -11,7 +11,6 @@ from datetime import datetime, timezone
 import logging
 
 from dependencies import get_current_user
-from models.usuario import Usuario
 from services.gps_service import (
     batch_insert_gps,
     cerrar_jornada_con_gps,
@@ -92,7 +91,7 @@ class JornadaGPSResumen(BaseModel):
 )
 async def gps_batch(
     body: GPSBatchRequest,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Recibe hasta 500 puntos GPS y los inserta en bulk en jornada_gps_logs.
@@ -102,7 +101,7 @@ async def gps_batch(
     try:
         n = await batch_insert_gps(
             jornada_id=body.jornada_id,
-            conductor_id=str(current_user.id),
+            conductor_id=str(current_user["id"]),
             puntos=body.puntos,
         )
         return GPSBatchResponse(
@@ -125,7 +124,7 @@ async def gps_batch(
 )
 async def gps_historial(
     jornada_id: str,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Devuelve los puntos GPS descifrados de una jornada específica.
@@ -133,7 +132,7 @@ async def gps_historial(
     Las coordenadas se descifran en memoria — nunca persisten en claro.
     """
     try:
-        puntos = await get_gps_historial(jornada_id, str(current_user.id))
+        puntos = await get_gps_historial(jornada_id, str(current_user["id"]))
         return GPSHistorialResponse(
             jornada_id=jornada_id,
             puntos=puntos,
@@ -153,14 +152,14 @@ async def gps_historial(
     tags=["GPS"],
 )
 async def gps_resumen_jornadas(
-    current_user: Usuario = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Retorna metadatos de jornadas que tienen puntos GPS.
     Sin coordenadas — para poblar el selector de la vista Analítica.
     """
     try:
-        return await get_resumen_jornadas_con_gps(str(current_user.id))
+        return await get_resumen_jornadas_con_gps(str(current_user["id"]))
     except Exception as e:
         logger.error("Error GPS resumen jornadas: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno al obtener resumen de jornadas")
@@ -173,7 +172,7 @@ async def gps_resumen_jornadas(
     tags=["Jornada"],
 )
 async def cerrar_jornada_v2(
-    current_user: Usuario = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Cierra la jornada activa del conductor.
@@ -182,7 +181,7 @@ async def cerrar_jornada_v2(
     Calcula eficiencia MXN/km usando distancia GPS real.
     """
     try:
-        resultado = await cerrar_jornada_con_gps(conductor_id=str(current_user.id))
+        resultado = await cerrar_jornada_con_gps(conductor_id=str(current_user["id"]))
         return resultado
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

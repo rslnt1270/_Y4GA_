@@ -6,5 +6,5 @@ app_name = "xray"
 
 urlpatterns = [
     path("", views.index, name="index"),
-    path("api/tendencia/", views.api_tendencia, name="api_tendencia"),
+    path("api/", views.api_datos, name="api_datos"),
 ]

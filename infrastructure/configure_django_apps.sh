@@ -11,19 +11,21 @@ set -euo pipefail
 TARGET="${1:-all}"
 SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=15"
 
-# ── Instancia Ubuntu (us-east-1) ─────────────────────────────────────────────
+# ── Instancia Ubuntu (us-east-1) — puerto 6285, SG sg-0486cecc1922afa30 ──────
 UBUNTU_HOST="ubuntu@ec2-34-228-82-92.compute-1.amazonaws.com"
 UBUNTU_PEM="develomen.pem"
-UBUNTU_TESTING="testing"        # nombre del proyecto Django (directorio con settings.py)
+UBUNTU_TESTING="testing"
 UBUNTU_BASE="/home/ubuntu/venv/www/testing"
 UBUNTU_PUBLIC_DNS="ec2-34-228-82-92.compute-1.amazonaws.com"
+UBUNTU_PORT=6285
 
-# ── Instancia EC2 (us-east-2) ────────────────────────────────────────────────
+# ── Instancia EC2 testing (us-east-2) — puerto 8000 ──────────────────────────
 EC2_HOST="ec2-user@ec2-13-58-246-32.us-east-2.compute.amazonaws.com"
 EC2_PEM="YAGA_development_pm.pem"
 EC2_TESTING="testing"
 EC2_BASE="/home/ec2-user/venv/www/testing"
 EC2_PUBLIC_DNS="ec2-13-58-246-32.us-east-2.compute.amazonaws.com"
+EC2_PORT=8000
 
 # ── Función: configurar una instancia ────────────────────────────────────────
 configure_instance() {
@@ -187,15 +189,15 @@ echo "========================================================"
 echo " CONFIGURACIÓN COMPLETADA"
 echo "========================================================"
 echo ""
-echo " Ubuntu (us-east-1):"
-echo "   http://$UBUNTU_PUBLIC_DNS:8000/xray/"
-echo "   http://$UBUNTU_PUBLIC_DNS:8000/polls/"
+echo " Ubuntu (us-east-1) — puerto $UBUNTU_PORT (SG: sg-0486cecc1922afa30):"
+echo "   http://$UBUNTU_PUBLIC_DNS:$UBUNTU_PORT/xray/"
+echo "   http://$UBUNTU_PUBLIC_DNS:$UBUNTU_PORT/polls/"
 echo ""
-echo " EC2 (us-east-2):"
-echo "   http://$EC2_PUBLIC_DNS:8000/xray/"
-echo "   http://$EC2_PUBLIC_DNS:8000/polls/"
+echo " EC2 testing (us-east-2) — puerto $EC2_PORT:"
+echo "   http://$EC2_PUBLIC_DNS:$EC2_PORT/xray/"
+echo "   http://$EC2_PUBLIC_DNS:$EC2_PORT/polls/"
 echo ""
-echo " Para levantar Django en cada instancia:"
-echo "   source ~/venv/bin/activate && cd ~/venv/www/testing"
-echo "   python manage.py migrate"
-echo "   python manage.py runserver 0.0.0.0:8000"
+echo " Para levantar Django:"
+echo "   Ubuntu : python manage.py runserver 0.0.0.0:$UBUNTU_PORT"
+echo "   EC2    : python manage.py runserver 0.0.0.0:$EC2_PORT"
+echo "   (activar venv primero: source ~/venv/bin/activate)"

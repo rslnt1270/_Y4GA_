@@ -2150,7 +2150,16 @@
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + getToken()
         },
-        body: JSON.stringify({ text, conductor_id: CONDUCTOR_ID }),
+        body: JSON.stringify((() => {
+          const b = { text, conductor_id: CONDUCTOR_ID };
+          const gps = window.GpsDashboard?.getState?.();
+          if (gps?.ultimoPunto) {
+            b.gps_lat = gps.ultimoPunto.lat;
+            b.gps_lng = gps.ultimoPunto.lng;
+            b.gps_precision_m = gps.ultimoPunto.precision_m;
+          }
+          return b;
+        })()),
       });
       const data = await res.json();
       const ok = data.data !== null;

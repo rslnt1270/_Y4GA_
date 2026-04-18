@@ -23,6 +23,37 @@ def _truncar_coordenada(valor: float, decimales: int = 4) -> float:
     return round(valor, decimales)
 
 
+async def _filtrar_saltos(conn, jornada_id: str, puntos: list) -> list:
+    """Filtra puntos con velocidad implícita > 300 km/h respecto al punto previo."""
+    last = await conn.fetchrow(
+        "SELECT lat_cifrado, lng_cifrado, ts FROM jornada_gps_logs WHERE jornada_id = $1 ORDER BY ts DESC LIMIT 1",
+        jornada_id,
+    )
+
+    resultado = []
+    prev_lat, prev_lng, prev_ts = None, None, None
+
+    if last:
+        try:
+            prev_lat = float(decrypt_value(bytes(last["lat_cifrado"])))
+            prev_lng = float(decrypt_value(bytes(last["lng_cifrado"])))
+            prev_ts = last["ts"]
+        except Exception:
+            pass
+
+    for p in puntos:
+        if prev_lat is not None and prev_ts is not None:
+            d = geodesic((prev_lat, prev_lng), (p.lat, p.lng)).km
+            dt_h = (p.ts - prev_ts).total_seconds() / 3600
+            if dt_h > 0 and (d / dt_h) > 300:
+                logger.debug("Punto GPS descartado: salto %.1f km en %.1f s", d, dt_h * 3600)
+                continue
+        resultado.append(p)
+        prev_lat, prev_lng, prev_ts = p.lat, p.lng, p.ts
+
+    return resultado
+
+
 # ── GPS Batch Insert ──────────────────────────────────────────────────────────
 
 async def batch_insert_gps(
@@ -44,12 +75,24 @@ async def batch_insert_gps(
         if not row:
             raise ValueError("Jornada no encontrada o no pertenece al conductor")
 
+        # Filtrar puntos con GPS impreciso (>50m) antes de cifrar
+        puntos_validos = [p for p in puntos if p.precision_m is None or p.precision_m <= 50]
+        if not puntos_validos:
+            logger.debug("Todos los puntos GPS descartados por baja precisión")
+            return 0
+
+        # Filtrar saltos imposibles (>300 km/h) antes de cifrar
+        puntos_validos = await _filtrar_saltos(conn, jornada_id, puntos_validos)
+        if not puntos_validos:
+            logger.debug("Todos los puntos GPS descartados por saltos imposibles")
+            return 0
+
         # Cifrar coordenadas — IV único por punto
-        lats_cifrado = [encrypt_value(str(p.lat)) for p in puntos]
-        lngs_cifrado = [encrypt_value(str(p.lng)) for p in puntos]
-        vels = [p.vel_kmh for p in puntos]
-        precs = [p.precision_m for p in puntos]
-        tss = [p.ts for p in puntos]
+        lats_cifrado = [encrypt_value(str(p.lat)) for p in puntos_validos]
+        lngs_cifrado = [encrypt_value(str(p.lng)) for p in puntos_validos]
+        vels = [p.vel_kmh for p in puntos_validos]
+        precs = [p.precision_m for p in puntos_validos]
+        tss = [p.ts for p in puntos_validos]
 
         # Bulk insert via UNNEST — una sola query sin loop Python
         await conn.execute(
@@ -70,7 +113,7 @@ async def batch_insert_gps(
             precs,
             tss,
         )
-    return len(puntos)
+    return len(puntos_validos)
 
 
 # ── Cierre de Jornada con GPS ─────────────────────────────────────────────────

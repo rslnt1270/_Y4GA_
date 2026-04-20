@@ -1,0 +1,7 @@
+# © YAGA Project — Dependencias SOLO para correr tests (pytest).
+# NO se instalan en la imagen de producción. Para correr en EC2:
+#   docker exec yaga_api pip install --no-cache-dir -r /app/requirements-dev.txt
+#   docker exec yaga_api python -m pytest /app/tests/ -q
+pytest>=8.0
+pytest-asyncio>=0.23
+fakeredis>=2.21

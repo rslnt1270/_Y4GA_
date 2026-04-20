@@ -6,7 +6,7 @@ Tabla: usuarios (email, password_hash, nombre, roles…)
 Cifrado: email_cifrado y phone_cifrado vía core.crypto (AES-256-GCM).
 Respuesta: {token, conductor_id, nombre} — compatible con la PWA actual.
 """
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel
 from typing import Optional
 from jose import JWTError
@@ -18,10 +18,31 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from services.database import get_pool
-from services.auth_service import hash_password, verify_password, create_token, decode_token
+from services.auth_service import (
+    hash_password,
+    verify_password,
+    create_token,
+    create_token_after_refresh,
+    decode_token,
+)
 from services.audit_service import log_action
+from services.refresh_service import (
+    RefreshTokenError,
+    ReuseDetected,
+    create_refresh_token,
+    revoke_all_families_for_user,
+    revoke_token,
+    validate_and_rotate,
+)
+from core.cookies import (
+    clear_refresh_cookie,
+    get_refresh_cookie,
+    set_refresh_cookie,
+    validate_origin,
+)
 from core.crypto import encrypt_value
 from core.limiter import limiter
+from core.rate_limiter import check_user_rate_limit, reset_user_rate_limit
 from core.redis import redis_client
 
 
@@ -126,7 +147,12 @@ async def me(
 
 @router.post("/auth/register", status_code=201)
 @limiter.limit("3/minute")
-async def register(request: Request, body: RegistroBody, pool=Depends(get_pool)):
+async def register(
+    request: Request,
+    body: RegistroBody,
+    response: Response,
+    pool=Depends(get_pool),
+):
     """
     Registra un nuevo conductor.
     email y phone se guardan en texto plano (lookup/unique) + cifrado AES-256.
@@ -137,6 +163,8 @@ async def register(request: Request, body: RegistroBody, pool=Depends(get_pool))
         )
 
     email_norm = body.email.lower().strip()
+    ip = _client_ip(request)
+    ua = _client_ua(request)
 
     async with pool.acquire() as conn:
         existe = await conn.fetchval(
@@ -166,12 +194,16 @@ async def register(request: Request, body: RegistroBody, pool=Depends(get_pool))
 
     token = create_token(conductor_id, email_norm)
 
+    # Refresh token cookie (sliding 30d, cap 60d)
+    emission = await create_refresh_token(conductor_id, ip, ua)
+    set_refresh_cookie(response, emission.token_id, emission.ttl_cookie_seconds)
+
     asyncio.create_task(log_action(
         usuario_id=conductor_id,
         accion="registro",
-        ip=_client_ip(request),
-        user_agent=_client_ua(request),
-        detalles={"email": email_norm},
+        ip=ip,
+        user_agent=ua,
+        detalles={"email": email_norm, "familia_id": emission.familia_id},
     ))
 
     return {
@@ -185,7 +217,12 @@ async def register(request: Request, body: RegistroBody, pool=Depends(get_pool))
 
 @router.post("/auth/login")
 @limiter.limit("5/minute")
-async def login(request: Request, body: LoginBody, pool=Depends(get_pool)):
+async def login(
+    request: Request,
+    body: LoginBody,
+    response: Response,
+    pool=Depends(get_pool),
+):
     """Login por email + contraseña. Devuelve JWT compatible con la PWA."""
     email_norm = body.email.lower().strip()
     ip = _client_ip(request)
@@ -201,6 +238,14 @@ async def login(request: Request, body: LoginBody, pool=Depends(get_pool)):
             email_norm,
         )
 
+    if row:
+        await check_user_rate_limit(
+            str(row["id"]),
+            action="login",
+            max_attempts=5,
+            window_seconds=900,
+        )
+
     if not row or not verify_password(body.password, row["password_hash"]):
         asyncio.create_task(log_action(
             usuario_id=str(row["id"]) if row else None,
@@ -211,19 +256,25 @@ async def login(request: Request, body: LoginBody, pool=Depends(get_pool)):
         ))
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
-    token = create_token(str(row["id"]), email_norm)
+    await reset_user_rate_limit(str(row["id"]), "login")
+    conductor_id = str(row["id"])
+    token = create_token(conductor_id, email_norm)
+
+    # Refresh token cookie (sliding 30d, cap 60d)
+    emission = await create_refresh_token(conductor_id, ip, ua)
+    set_refresh_cookie(response, emission.token_id, emission.ttl_cookie_seconds)
 
     asyncio.create_task(log_action(
-        usuario_id=str(row["id"]),
+        usuario_id=conductor_id,
         accion="login_exitoso",
         ip=ip,
         user_agent=ua,
-        detalles={"email": email_norm},
+        detalles={"email": email_norm, "familia_id": emission.familia_id},
     ))
 
     return {
         "token": token,
-        "conductor_id": str(row["id"]),
+        "conductor_id": conductor_id,
         "nombre": row["nombre"],
     }
 
@@ -289,7 +340,12 @@ class ResetBody(BaseModel):
 
 
 @router.post("/auth/reset-password")
-async def reset_password(request: Request, body: ResetBody, pool=Depends(get_pool)):
+async def reset_password(
+    request: Request,
+    body: ResetBody,
+    response: Response,
+    pool=Depends(get_pool),
+):
     """Valida el token de Redis y actualiza la contraseña."""
     if len(body.nueva_password) < 6:
         raise HTTPException(status_code=422, detail="La contraseña debe tener al menos 6 caracteres")
@@ -309,19 +365,135 @@ async def reset_password(request: Request, body: ResetBody, pool=Depends(get_poo
     if not row:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    token_jwt = create_token(str(row["id"]), row["email"])
+    uid = str(row["id"])
+    ip = _client_ip(request)
+    ua = _client_ua(request)
+
+    # Revocar TODAS las sesiones anteriores (cambio de credenciales)
+    familias_revocadas = await revoke_all_families_for_user(
+        uid, motivo="password_reset"
+    )
+
+    token_jwt = create_token(uid, row["email"])
+
+    # Nueva familia de refresh para esta sesión
+    emission = await create_refresh_token(uid, ip, ua)
+    set_refresh_cookie(response, emission.token_id, emission.ttl_cookie_seconds)
 
     asyncio.create_task(log_action(
-        usuario_id=str(row["id"]),
+        usuario_id=uid,
         accion="reset_password_completado",
-        ip=_client_ip(request),
-        user_agent=_client_ua(request),
-        detalles={"email": row["email"]},
+        ip=ip,
+        user_agent=ua,
+        detalles={
+            "email": row["email"],
+            "familias_revocadas": familias_revocadas,
+            "familia_id": emission.familia_id,
+        },
     ))
 
     return {
         "message": "Contraseña actualizada correctamente",
         "token": token_jwt,
+        "conductor_id": uid,
+        "nombre": row["nombre"],
+    }
+
+
+# ── /auth/refresh ─────────────────────────────────────────────────────────────
+
+@router.post("/auth/refresh")
+@limiter.limit("60/minute")
+async def refresh(request: Request, response: Response, pool=Depends(get_pool)):
+    """
+    Rota el refresh token y emite un access token corto (15 min).
+    Fallos genéricos: 401 sin exponer la razón. Incluye detección de reuse.
+    """
+    if not validate_origin(request):
+        # Origin inválido → defensa en profundidad contra CSRF
+        raise HTTPException(status_code=401, detail="No autorizado")
+
+    token_id = get_refresh_cookie(request)
+    if not token_id:
+        raise HTTPException(status_code=401, detail="No autorizado")
+
+    ip = _client_ip(request)
+    ua = _client_ua(request)
+
+    try:
+        emission = await validate_and_rotate(token_id, ip, ua)
+    except ReuseDetected:
+        # Limpiar cookie atacada y auditar — luego 401 genérico
+        clear_refresh_cookie(response)
+        asyncio.create_task(log_action(
+            usuario_id=None,
+            accion="auth_reuse_detected",
+            ip=ip,
+            user_agent=ua,
+            detalles={"offending_token_prefix": token_id[:8]},
+        ))
+        raise HTTPException(status_code=401, detail="No autorizado")
+    except RefreshTokenError:
+        clear_refresh_cookie(response)
+        raise HTTPException(status_code=401, detail="No autorizado")
+
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, email, nombre FROM usuarios WHERE id = $1 AND deleted_at IS NULL",
+            emission.usuario_id,
+        )
+
+    if not row:
+        # Usuario borrado entre login y refresh → revocar todo y rechazar
+        await revoke_all_families_for_user(emission.usuario_id, motivo="usuario_eliminado")
+        clear_refresh_cookie(response)
+        raise HTTPException(status_code=401, detail="No autorizado")
+
+    access = create_token_after_refresh(str(row["id"]), row["email"])
+    set_refresh_cookie(response, emission.token_id, emission.ttl_cookie_seconds)
+
+    asyncio.create_task(log_action(
+        usuario_id=str(row["id"]),
+        accion="auth_refresh",
+        ip=ip,
+        user_agent=ua,
+        detalles={
+            "familia_id": emission.familia_id,
+            "nuevo_token_prefix": emission.token_id[:8],
+        },
+    ))
+
+    return {
+        "token": access,
         "conductor_id": str(row["id"]),
         "nombre": row["nombre"],
     }
+
+
+# ── /auth/logout ──────────────────────────────────────────────────────────────
+
+@router.post("/auth/logout", status_code=204)
+async def logout(request: Request, response: Response):
+    """
+    Cierra la sesión actual (revoca el refresh token). Idempotente:
+    sin cookie responde 204 igual (no revela estado al atacante).
+    """
+    token_id = get_refresh_cookie(request)
+    clear_refresh_cookie(response)
+
+    if not token_id:
+        return Response(status_code=204)
+
+    ip = _client_ip(request)
+    ua = _client_ua(request)
+
+    usuario_id = await revoke_token(token_id)
+
+    asyncio.create_task(log_action(
+        usuario_id=usuario_id,
+        accion="auth_logout",
+        ip=ip,
+        user_agent=ua,
+        detalles={"token_prefix": token_id[:8]},
+    ))
+    return Response(status_code=204)

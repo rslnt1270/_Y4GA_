@@ -65,9 +65,6 @@ app.include_router(gps_router, tags=["GPS"])
 app.include_router(arco_router, prefix="/api/v1", tags=["ARCO"])
 app.include_router(consentimientos_router, prefix="/api/v1", tags=["Consentimientos"])
 app.include_router(poleana_router)
-# TODO: Sistema B deshabilitado por vulnerabilidad — ver Fix 6.1
-# app.include_router(auth_router_new)                     # autenticación JWT (/auth/...)
-# app.include_router(consentimientos_router)              # gestión de consentimientos (/consentimientos)
 
 
 @app.get("/health", tags=["Health"])

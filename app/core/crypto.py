@@ -24,10 +24,16 @@ def _get_key() -> bytes:
         return _KEY
     raw = os.environ.get("DB_ENCRYPT_KEY", "")
     if not raw or len(raw) < 64:
+        env = os.environ.get("ENVIRONMENT", "development")
+        if env == "production":
+            raise RuntimeError(
+                "DB_ENCRYPT_KEY no configurada en producción. "
+                "Genera 32 bytes aleatorios: python3 -c \"import secrets; print(secrets.token_hex(32))\""
+            )
         # Clave de desarrollo — NUNCA usar en producción
         import warnings
         warnings.warn(
-            "DB_ENCRYPT_KEY no configurada — usando clave de desarrollo insegura",
+            "DB_ENCRYPT_KEY no configurada — usando clave de desarrollo insegura (NUNCA en producción)",
             stacklevel=3,
         )
         raw = "0" * 64

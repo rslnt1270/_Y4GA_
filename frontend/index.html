@@ -151,6 +151,128 @@
     .ud-item.danger { color: var(--danger); }
     .ud-item .ud-icon { font-size: 1rem; width: 20px; text-align: center; }
 
+    /* ── ARCO — Mis Datos y Privacidad ── */
+    .screen-arco { padding: 16px; gap: 12px; }
+    #screen-arco { padding: 16px 12px 24px; }
+    .arco-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .consent-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.72);
+      z-index: 9000;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .consent-overlay.active { display: flex; }
+    .consent-sheet {
+      max-width: 420px; width: 100%;
+      max-height: 90vh; overflow-y: auto;
+      margin: 0;
+    }
+    .consent-row {
+      display: flex; gap: 12px;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .consent-row:last-of-type { border-bottom: none; }
+    .consent-title { font-weight: 700; color: #fff; font-size: 14px; }
+    .consent-desc { color: #aaa; font-size: 12px; margin-top: 2px; line-height: 1.35; }
+    .arco-section h3 {
+      margin: 0 0 12px;
+      font-size: .82rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+    .arco-section p { margin: 0 0 12px; }
+    .arco-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .88rem;
+      color: var(--text);
+      gap: 12px;
+    }
+    .arco-field:last-of-type { border-bottom: none; }
+    .arco-field .label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+    .arco-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: .9rem;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .arco-input:focus { border-color: var(--accent); outline: none; }
+    .arco-input::placeholder { color: var(--muted); }
+    .arco-btn {
+      display: inline-block;
+      width: 100%;
+      background: transparent;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: .88rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+      letter-spacing: .5px;
+      margin-top: 4px;
+    }
+    .arco-btn:active { opacity: .75; }
+    .arco-btn:hover { background: rgba(0, 229, 160, .08); }
+    .arco-btn.danger {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .arco-btn.danger:hover { background: rgba(224, 85, 85, .08); }
+    .arco-toggle {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .arco-toggle input { opacity: 0; width: 0; height: 0; }
+    .arco-toggle span {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--border);
+      border-radius: 24px;
+      transition: background .2s;
+    }
+    .arco-toggle span::before {
+      content: '';
+      position: absolute;
+      height: 18px; width: 18px;
+      left: 3px; top: 3px;
+      background: var(--text);
+      border-radius: 50%;
+      transition: transform .2s;
+    }
+    .arco-toggle input:checked + span { background: var(--accent); }
+    .arco-toggle input:checked + span::before { transform: translateX(20px); background: #0f1923; }
+
     /* ── CAPA 1 — INMEDIATA ── */
     .layer-1 {
       display: grid;
@@ -273,6 +395,27 @@
       padding: 14px 18px;
       overflow-y: auto;
       min-height: 0;
+    }
+    .gps-section {
+      padding: 14px 18px 8px;
+      border-top: 1px solid var(--border, #1e2d45);
+    }
+    .gps-toggle-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background: var(--accent, #00e5ff);
+      color: #0a1220;
+      font-weight: 700;
+      border: none;
+      font-size: .9rem;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background .2s;
+    }
+    .analitica-header {
+      background: var(--surface, #1a2234);
+      border-bottom: 1px solid var(--border, #1e2d45);
     }
     .section-title {
       font-size: .5rem;
@@ -1338,6 +1481,9 @@
     <div class="ud-item" onclick="$('userDropdown').classList.remove('open'); abrirImport()">
       <span class="ud-icon">📥</span> Importar historial Uber/DiDi
     </div>
+    <div class="ud-item" onclick="abrirArco()">
+      <span class="ud-icon">🔒</span> Mis Datos y Privacidad
+    </div>
     <div class="ud-item danger" onclick="cerrarSesion()">
       <span class="ud-icon">🚪</span> Cerrar sesión
     </div>
@@ -1348,6 +1494,7 @@
     <div class="tab active" onclick="switchTab('dashboard')">🚕 Jornada</div>
     <div class="tab" onclick="switchTab('vehiculo')">🔧 Vehículo</div>
     <div class="tab" onclick="switchTab('mapa')">🗺️ Mapa</div>
+    <div class="tab" onclick="switchTab('analitica')">📊 Analítica</div>
   </div>
 
   <!-- SCREEN: DASHBOARD -->
@@ -1405,6 +1552,14 @@
     <div id="tripsList">
       <div class="empty-state">Sin viajes registrados aún</div>
     </div>
+  </div>
+
+  <!-- GPS TRACKING -->
+  <div class="gps-section" id="gpsSection">
+    <div class="section-title">GPS Tracking</div>
+    <button class="gps-toggle-btn" id="btnGps" onclick="toggleGps()">Iniciar GPS</button>
+    <div id="gpsDashboardContainer"></div>
+    <div id="mapaRutaActiva" style="height:200px;border-radius:10px;overflow:hidden;display:none;margin-top:8px"></div>
   </div>
 
   </div><!-- /screen-dashboard -->
@@ -1565,6 +1720,106 @@
     <button class="mapa-fab" id="mapaFab" style="display:none" onclick="abrirImport()">+ Importar</button>
 
   </div><!-- /screen-mapa -->
+
+  <!-- SCREEN: ANALÍTICA 3D -->
+  <div class="screen" id="screen-analitica">
+    <div class="analitica-header">
+      <div class="section-title" style="padding:12px 12px 4px">Analítica de Rutas</div>
+      <div style="padding:0 12px 12px">
+        <select id="selectJornada" style="width:100%;padding:8px;border-radius:8px;background:var(--surface,#1a2234);color:var(--text,#e0e6f0);border:1px solid #2a3550;font-size:.9rem;margin-bottom:8px">
+          <option value="">Selecciona una jornada…</option>
+        </select>
+        <button onclick="cargarAnalisis3D()" style="width:100%;padding:12px;border-radius:8px;background:var(--accent,#00e5ff);color:#0a1220;font-weight:700;border:none;font-size:.95rem;cursor:pointer">
+          Cargar vista 3D
+        </button>
+      </div>
+    </div>
+    <div id="mapLibreContainer" style="height:55vh;width:100%;position:relative;background:#0a1220">
+      <canvas id="deckCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></canvas>
+      <div id="analiticaEmpty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#4a5568;font-size:.9rem;text-align:center;padding:24px">
+        <div style="font-size:2.5rem;margin-bottom:12px">📍</div>
+        <div>Selecciona una jornada y pulsa<br><strong>Cargar vista 3D</strong></div>
+      </div>
+    </div>
+  </div><!-- /screen-analitica -->
+
+  <!-- SCREEN: MIS DATOS Y PRIVACIDAD (ARCO) -->
+  <div class="screen" id="screen-arco">
+    <!-- Sección: Mis Datos -->
+    <div class="arco-section" id="arcoSeccionDatos">
+      <h3>Mis datos personales</h3>
+      <div class="arco-field"><span class="label">Nombre</span><span id="arcoNombre">—</span></div>
+      <div class="arco-field"><span class="label">Email</span><span id="arcoEmail">—</span></div>
+      <button class="arco-btn" onclick="arcoCargarDatos()">Actualizar datos</button>
+    </div>
+    <!-- Sección: Rectificación -->
+    <div class="arco-section">
+      <h3>Modificar mis datos</h3>
+      <input class="arco-input" id="arcoInputNombre" type="text" placeholder="Nuevo nombre (opcional)">
+      <input class="arco-input" id="arcoInputEmail" type="email" placeholder="Nuevo email (opcional)">
+      <button class="arco-btn" onclick="arcoRectificar()">Guardar cambios</button>
+    </div>
+    <!-- Sección: Consentimientos -->
+    <div class="arco-section">
+      <h3>Mis consentimientos</h3>
+      <div class="arco-field">
+        <span class="label">Operación (obligatorio)</span>
+        <span style="color:#00e5a0;font-weight:700">Activo</span>
+      </div>
+      <div class="arco-field">
+        <span class="label">Marketing</span>
+        <label class="arco-toggle"><input type="checkbox" id="toggleMarketing" onchange="arcoOposicion('marketing', this.checked)"><span></span></label>
+      </div>
+      <div class="arco-field">
+        <span class="label">Investigación</span>
+        <label class="arco-toggle"><input type="checkbox" id="toggleInvestigacion" onchange="arcoOposicion('investigacion', this.checked)"><span></span></label>
+      </div>
+      <button class="arco-btn" style="margin-top:10px" onclick="abrirModalConsentimientos()">Administrar por canal</button>
+    </div>
+    <!-- Sección: Cancelar cuenta -->
+    <div class="arco-section">
+      <h3>Eliminar mi cuenta</h3>
+      <p style="color:#aaa;font-size:13px">Tus datos personales serán anonimizados. Los registros de viajes se conservan 7 años por obligación fiscal.</p>
+      <button class="arco-btn danger" onclick="arcoCancelar()">Eliminar mi cuenta</button>
+    </div>
+  </div><!-- /screen-arco -->
+
+  <!-- MODAL CONSENTIMIENTOS GRANULARES -->
+  <div class="consent-overlay" id="consentOverlay" onclick="cerrarConsentSiOverlay(event)">
+    <div class="consent-sheet arco-section">
+      <h3>Tus consentimientos</h3>
+      <p style="color:#aaa;font-size:13px;margin:6px 0 14px">Elige cómo quieres que tratemos tus datos. Puedes cambiar esto cuando quieras.</p>
+
+      <div class="consent-row">
+        <label class="arco-toggle"><input type="checkbox" id="cnsOp" checked disabled><span></span></label>
+        <div>
+          <div class="consent-title">Operación</div>
+          <div class="consent-desc">Necesario para tu cuenta, pagos y registros fiscales. No se puede revocar mientras la cuenta esté activa.</div>
+        </div>
+      </div>
+
+      <div class="consent-row">
+        <label class="arco-toggle"><input type="checkbox" id="cnsMkt"><span></span></label>
+        <div>
+          <div class="consent-title">Marketing</div>
+          <div class="consent-desc">Promociones y comunicaciones. Puedes revocar cuando quieras.</div>
+        </div>
+      </div>
+
+      <div class="consent-row">
+        <label class="arco-toggle"><input type="checkbox" id="cnsInv"><span></span></label>
+        <div>
+          <div class="consent-title">Investigación</div>
+          <div class="consent-desc">Análisis agregado para mejorar el servicio. Datos anonimizados.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="arco-btn" onclick="guardarConsentimientos()">Guardar</button>
+        <button class="arco-btn" style="background:#333" onclick="cerrarModalConsentimientos()">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL IMPORT -->
   <div class="import-overlay" id="importOverlay" onclick="cerrarImportSiOverlay(event)">
@@ -1895,7 +2150,16 @@
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + getToken()
         },
-        body: JSON.stringify({ text, conductor_id: CONDUCTOR_ID }),
+        body: JSON.stringify((() => {
+          const b = { text, conductor_id: CONDUCTOR_ID };
+          const gps = window.GpsDashboard?.getState?.();
+          if (gps?.ultimoPunto) {
+            b.gps_lat = gps.ultimoPunto.lat;
+            b.gps_lng = gps.ultimoPunto.lng;
+            b.gps_precision_m = gps.ultimoPunto.precision_m;
+          }
+          return b;
+        })()),
       });
       const data = await res.json();
       const ok = data.data !== null;
@@ -1972,7 +2236,7 @@
   // ── TABS ─────────────────────────────────────────────────
   function switchTab(name) {
     document.querySelectorAll('.tab').forEach((t, i) => {
-      t.classList.toggle('active', ['dashboard','vehiculo','mapa'][i] === name);
+      t.classList.toggle('active', ['dashboard','vehiculo','mapa','analitica'][i] === name);
     });
     document.querySelectorAll('.screen').forEach(s => {
       s.classList.toggle('active', s.id === 'screen-' + name);
@@ -1991,6 +2255,7 @@
         initMapa();
       }, 50);
     }
+    if (name === 'analitica') cargarJornadasSelector();
   }
 
   // ── VEHÍCULO ─────────────────────────────────────────────
@@ -2180,13 +2445,190 @@
     switchTab('mapa');
   }
 
-  function cerrarSesion() {
+  async function cerrarSesion() {
+    // Sprint 10: invocar /auth/logout para revocar el refresh token en Valkey
+    // y borrar la cookie yaga_rt. Si falla, igual se limpia el estado local.
+    try {
+      await fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (e) { /* no-op: garantizar limpieza local abajo */ }
     clearSession();
     $('userDropdown').classList.remove('open');
     $('authScreen').classList.remove('hidden');
     // Limpiar estado del mapa para que recargue en el próximo login
     mapaInstance = null;
     mapaLoaded   = false;
+  }
+
+  // ── ARCO — Mis Datos y Privacidad ────────────────────────
+  // Helper que reutiliza el patrón de fetch + Authorization usado en el resto del archivo.
+  // Sprint 10: credentials:'include' para enviar la cookie yaga_rt en /auth/refresh y /auth/logout.
+  // Si un endpoint autenticado devuelve 401, se intenta UN refresh silencioso y se reintenta una vez.
+  async function apiFetch(path, opts = {}) {
+    const token = getToken();
+    const headers = Object.assign(
+      { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      opts.headers || {}
+    );
+    const merged = Object.assign({ credentials: 'include' }, opts, { headers });
+    let res = await fetch(API + path, merged);
+    if (res.status === 401 && !opts._retried && path !== '/auth/refresh') {
+      const ok = await bootSession({ silent: true });
+      if (ok) {
+        const retryHeaders = Object.assign({}, headers, { 'Authorization': 'Bearer ' + getToken() });
+        const retryOpts = Object.assign({}, merged, { headers: retryHeaders, _retried: true });
+        res = await fetch(API + path, retryOpts);
+      }
+    }
+    return res;
+  }
+
+  async function abrirArco() {
+    $('userDropdown').classList.remove('open');
+    // Ocultar todas las screens (tabs) y mostrar la de ARCO
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    $('screen-arco').classList.add('active');
+    // Mostrar botón back para volver al dashboard
+    const btnBack = $('btnBack');
+    if (btnBack) btnBack.classList.add('visible');
+    await arcoCargarDatos();
+  }
+
+  async function arcoCargarDatos() {
+    try {
+      const res = await apiFetch('/arco/acceso');
+      if (res.ok) {
+        const d = await res.json();
+        // El endpoint puede devolver los datos anidados; probamos ambos formatos.
+        const datos = d.datos_personales || d;
+        $('arcoNombre').textContent = datos.nombre || d.nombre || '—';
+        $('arcoEmail').textContent  = datos.email  || d.email  || '—';
+      } else if (res.status === 401) {
+        showToast('Sesión expirada');
+        return;
+      }
+      const rc = await apiFetch('/consentimientos');
+      if (rc.ok) {
+        const payload = await rc.json();
+        const cs = Array.isArray(payload) ? payload : (payload.consentimientos || []);
+        const mk  = cs.find(c => c.finalidad === 'marketing');
+        const inv = cs.find(c => c.finalidad === 'investigacion');
+        const valActivo = c => (c && (c.estado === true || c.activo === true));
+        if ($('toggleMarketing'))     $('toggleMarketing').checked     = valActivo(mk);
+        if ($('toggleInvestigacion')) $('toggleInvestigacion').checked = valActivo(inv);
+      }
+    } catch (e) {
+      showToast('Error al cargar datos');
+    }
+  }
+
+  async function arcoRectificar() {
+    const nombre = $('arcoInputNombre').value.trim();
+    const email  = $('arcoInputEmail').value.trim();
+    if (!nombre && !email) { showToast('Ingresa al menos un campo'); return; }
+    const body = {};
+    if (nombre) body.nombre = nombre;
+    if (email)  body.email  = email;
+    try {
+      const res = await apiFetch('/arco/rectificacion', {
+        method: 'PUT',
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        showToast('Datos actualizados');
+        $('arcoInputNombre').value = '';
+        $('arcoInputEmail').value  = '';
+        await arcoCargarDatos();
+      } else {
+        let msg = 'Error al actualizar';
+        try { const d = await res.json(); msg = d.detail || msg; } catch(_) {}
+        showToast(msg);
+      }
+    } catch (e) {
+      showToast('Error de conexión');
+    }
+  }
+
+  async function arcoOposicion(finalidad, activo) {
+    try {
+      const res = await apiFetch('/arco/oposicion', {
+        method: 'POST',
+        body: JSON.stringify({ finalidad, activo })
+      });
+      if (!res.ok) showToast('Error al actualizar consentimiento');
+    } catch (e) {
+      showToast('Error al actualizar consentimiento');
+    }
+  }
+
+  // ── Modal consentimientos granulares (Sprint 8 W2) ──────────────────────
+  let _consentInitial = { marketing: false, investigacion: false };
+
+  async function abrirModalConsentimientos() {
+    try {
+      const res = await apiFetch('/consentimientos');
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        _consentInitial.marketing     = items.some(c => c.finalidad === 'marketing'     && c.estado);
+        _consentInitial.investigacion = items.some(c => c.finalidad === 'investigacion' && c.estado);
+      }
+    } catch (e) { /* prefill con defaults */ }
+    $('cnsMkt').checked = _consentInitial.marketing;
+    $('cnsInv').checked = _consentInitial.investigacion;
+    $('consentOverlay').classList.add('active');
+  }
+
+  function cerrarModalConsentimientos() {
+    $('consentOverlay').classList.remove('active');
+  }
+
+  function cerrarConsentSiOverlay(ev) {
+    if (ev.target.id === 'consentOverlay') cerrarModalConsentimientos();
+  }
+
+  async function guardarConsentimientos() {
+    const nuevos = {
+      marketing:     $('cnsMkt').checked,
+      investigacion: $('cnsInv').checked,
+    };
+    const cambios = [];
+    for (const [finalidad, estado] of Object.entries(nuevos)) {
+      if (_consentInitial[finalidad] !== estado) {
+        cambios.push({ finalidad, estado });
+      }
+    }
+    if (cambios.length === 0) { cerrarModalConsentimientos(); return; }
+    try {
+      await Promise.all(cambios.map(c =>
+        apiFetch('/consentimientos', { method: 'POST', body: JSON.stringify(c) })
+      ));
+      _consentInitial = { ...nuevos };
+      showToast('Consentimientos guardados');
+      cerrarModalConsentimientos();
+    } catch (e) {
+      showToast('Error al guardar');
+    }
+  }
+
+  async function arcoCancelar() {
+    if (!confirm('¿Seguro? Esta acción anonimizará tus datos personales y no se puede deshacer.')) return;
+    if (!confirm('Confirma: todos tus datos personales serán eliminados.')) return;
+    try {
+      const res = await apiFetch('/arco/cancelacion', { method: 'POST' });
+      if (res.ok) {
+        showToast('Cuenta cancelada');
+        setTimeout(cerrarSesion, 2000);
+      } else {
+        showToast('Error al cancelar cuenta');
+      }
+    } catch (e) {
+      showToast('Error de conexión');
+    }
   }
 
   // ── MAPA HISTORICO ───────────────────────────────────────
@@ -2427,10 +2869,40 @@
   // ── VALIDACION DE TOKEN AL ARRANQUE ──────────────────────
   // Con JWT en memoria, al recargar la página el token siempre es null.
   // El usuario debe hacer login nuevamente (comportamiento seguro).
+
+  // Sprint 10: intenta recuperar la sesión usando la cookie HttpOnly yaga_rt.
+  // - opts.silent=true: no redirige al login si falla (para usar como interceptor en apiFetch).
+  // - devuelve true si el refresh fue exitoso (token en memoria ya actualizado).
+  async function bootSession(opts = {}) {
+    try {
+      const res = await fetch('/api/v1/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const remember = !!localStorage.getItem('yaga_conductor_id');
+      saveSession(data.token, data.conductor_id, data.nombre, getYaga('yaga_email') || '', remember);
+      CONDUCTOR_ID = data.conductor_id;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   async function validarSesion() {
     const token = getToken(); // null en page load
     const conductorId = getYaga('yaga_conductor_id');
     if (!token || !conductorId) {
+      // Intento silencioso de recuperar sesión vía refresh token (F5 retention)
+      const ok = await bootSession();
+      if (ok) {
+        $('authScreen').classList.add('hidden');
+        initUserMenu();
+        fetchResumen();
+        return;
+      }
       elegirYaga();
       return;
     }
@@ -2495,6 +2967,7 @@
     try {
       var res = await fetch("/api/v1/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, password: pass })
       });
@@ -2521,6 +2994,7 @@
     try {
       var res = await fetch("/api/v1/auth/register", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nombre: nombre, email: email, password: pass, telefono: tel })
       });
@@ -2531,6 +3005,7 @@
       document.getElementById("authScreen").classList.add("hidden");
       initUserMenu();
       fetchResumen();
+      setTimeout(() => { try { abrirModalConsentimientos(); } catch(_) {} }, 400);
     } catch(e) { setAuthError("regError", "Sin conexión"); }
     finally { btn.disabled = false; btn.textContent = "Crear cuenta"; }
   }
@@ -2562,6 +3037,7 @@
     try {
       var res  = await fetch("/api/v1/auth/forgot-password", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email })
       });
@@ -2595,6 +3071,7 @@
     try {
       var res  = await fetch("/api/v1/auth/reset-password", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: token, nueva_password: pass })
       });
@@ -2729,7 +3206,188 @@
     document.getElementById("btnHelp").classList.remove("active");
     document.getElementById("cmdInput").focus();
   }
+
+  // ── GPS TRACKING ─────────────────────────────────────────
+  let _miniMapa = null;
+  let _rutaPolyline = null;
+
+  async function toggleGps() {
+    const token = getToken();
+    if (!token) { showToast('Inicia sesión primero'); return; }
+    if (typeof GpsDashboard === 'undefined') { showToast('Módulo GPS no disponible'); return; }
+    const btn = $('btnGps');
+    if (!GpsDashboard.getState().activo) {
+      try {
+        const res = await fetch(`${API}/resumen`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) { showToast('No hay jornada activa'); return; }
+        const data = await res.json();
+        const jornadaId = data.jornada_id;
+        if (!jornadaId) { showToast('Inicia una jornada primero'); return; }
+        await GpsDashboard.iniciarGps(token, jornadaId);
+        GpsDashboard.renderDashboardGps('gpsDashboardContainer');
+        GpsDashboard.subscribeGps(actualizarMiniMapa);
+        btn.textContent = 'Detener GPS';
+        btn.style.background = 'var(--danger,#e05555)';
+        showToast('GPS iniciado');
+      } catch(e) {
+        showToast('Error al iniciar GPS: ' + e.message);
+      }
+    } else {
+      await GpsDashboard.detenerGps(token);
+      btn.textContent = 'Iniciar GPS';
+      btn.style.background = '';
+      showToast('GPS detenido');
+    }
+  }
+
+  function actualizarMiniMapa(estado) {
+    const container = $('mapaRutaActiva');
+    if (!container) return;
+    container.style.display = 'block';
+    if (!_miniMapa) {
+      _miniMapa = L.map('mapaRutaActiva', { zoomControl: false, attributionControl: false });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd', maxZoom: 19
+      }).addTo(_miniMapa);
+    }
+    if (_rutaPolyline) _miniMapa.removeLayer(_rutaPolyline);
+    const coords = (estado.puntos || []).map(p => [p.lat, p.lng]);
+    if (coords.length > 0) {
+      _rutaPolyline = L.polyline(coords, { color: '#00e5ff', weight: 3 }).addTo(_miniMapa);
+      _miniMapa.fitBounds(_rutaPolyline.getBounds(), { padding: [10, 10] });
+    }
+  }
+
+  // ── ANALÍTICA 3D (MapLibre + deck.gl lazy load) ──────────
+  let _deckInstance = null;
+  let _mlMap = null;
+
+  async function cargarJornadasSelector() {
+    const token = getToken();
+    if (!token) return;
+    const sel = $('selectJornada');
+    if (sel.options.length > 1) return; // ya poblado
+    try {
+      const res = await fetch(`${API}/gps/resumen-jornadas`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) return;
+      const lista = await res.json();
+      lista.forEach(j => {
+        const opt = document.createElement('option');
+        opt.value = j.jornada_id;
+        opt.textContent = `${j.fecha} — ${j.total_puntos} puntos (${j.estado})`;
+        sel.appendChild(opt);
+      });
+    } catch(e) { /* sin conexión */ }
+  }
+
+  async function cargarAnalisis3D() {
+    const jornadaId = $('selectJornada').value;
+    if (!jornadaId) { showToast('Selecciona una jornada'); return; }
+    const token = getToken();
+    if (!token) { showToast('Inicia sesión primero'); return; }
+    $('analiticaEmpty').style.display = 'none';
+    showToast('Cargando librerías 3D…');
+
+    let MapLibreModule, DeckModule, LayersModule;
+    try {
+      [MapLibreModule, DeckModule, LayersModule] = await Promise.all([
+        import('https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.esm.min.js'),
+        import('https://cdn.jsdelivr.net/npm/@deck.gl/core@9.0.0/dist/index.js'),
+        import('https://cdn.jsdelivr.net/npm/@deck.gl/layers@9.0.0/dist/index.js'),
+      ]);
+    } catch(e) {
+      showToast('Error cargando librerías 3D');
+      $('analiticaEmpty').style.display = 'flex';
+      return;
+    }
+
+    let gpsData;
+    try {
+      const res = await fetch(`${API}/gps/historial/${jornadaId}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) { showToast('Sin datos GPS para esta jornada'); return; }
+      gpsData = await res.json();
+    } catch(e) {
+      showToast('Error obteniendo datos GPS');
+      return;
+    }
+
+    if (!gpsData.puntos || gpsData.puntos.length === 0) {
+      showToast('Esta jornada no tiene puntos GPS');
+      $('analiticaEmpty').style.display = 'flex';
+      return;
+    }
+
+    showToast('Renderizando mapa 3D…');
+
+    const { Map } = MapLibreModule;
+    const { Deck } = DeckModule;
+    const { PathLayer, ScatterplotLayer } = LayersModule;
+
+    // Destruir instancias previas
+    if (_mlMap) { _mlMap.remove(); _mlMap = null; }
+    if (_deckInstance) { _deckInstance.finalize(); _deckInstance = null; }
+
+    const centro = gpsData.puntos[Math.floor(gpsData.puntos.length / 2)];
+
+    _mlMap = new Map({
+      container: 'mapLibreContainer',
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      center: [centro.lng, centro.lat],
+      zoom: 13,
+      interactive: true,
+    });
+
+    _mlMap.on('load', () => {
+      const pathData = [{ path: gpsData.puntos.map(p => [p.lng, p.lat]) }];
+      const ptData = gpsData.puntos;
+
+      _deckInstance = new Deck({
+        canvas: 'deckCanvas',
+        initialViewState: { longitude: centro.lng, latitude: centro.lat, zoom: 13, pitch: 45 },
+        controller: false,
+        onViewStateChange: ({ viewState }) => {
+          _mlMap.jumpTo({
+            center: [viewState.longitude, viewState.latitude],
+            zoom: viewState.zoom,
+            bearing: viewState.bearing,
+            pitch: viewState.pitch,
+          });
+        },
+        layers: [
+          new PathLayer({
+            id: 'ruta',
+            data: pathData,
+            getPath: d => d.path,
+            getColor: [0, 229, 255],
+            getWidth: 4,
+            widthMinPixels: 2,
+          }),
+          new ScatterplotLayer({
+            id: 'puntos',
+            data: ptData,
+            getPosition: d => [d.lng, d.lat],
+            getRadius: 5,
+            getFillColor: d => {
+              const v = d.vel_kmh || 0;
+              if (v > 60) return [229, 85, 85];
+              if (v > 30) return [245, 166, 35];
+              return [34, 165, 90];
+            },
+            radiusMinPixels: 3,
+          }),
+        ],
+      });
+      showToast(`${gpsData.total_puntos} puntos GPS renderizados`);
+    });
+  }
 </script>
+<script src="/yaga/GpsDashboard.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 </body>

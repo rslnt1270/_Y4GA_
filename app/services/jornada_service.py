@@ -4,6 +4,7 @@ Copyright (c) 2026 YAGA Project
 """
 from services.database import get_pool
 from services.historico_service import get_promedio_historico
+from services.gps_service import _calcular_distancia
 from datetime import date
 
 
@@ -62,8 +63,16 @@ async def get_resumen_jornada(conductor_id: str = "default") -> dict:
         viajes = await conn.fetch("SELECT monto, propina, plataforma, metodo_pago FROM viajes WHERE jornada_id = $1", jornada["id"])
         gastos = await conn.fetch("SELECT monto, categoria FROM gastos WHERE jornada_id = $1", jornada["id"])
 
+        # Distancia GPS acumulada en jornada activa
+        gps_rows = await conn.fetch(
+            "SELECT lat_cifrado, lng_cifrado, ts FROM jornada_gps_logs WHERE jornada_id = $1 ORDER BY ts ASC",
+            jornada["id"],
+        )
+        distancia_km = _calcular_distancia(gps_rows)
+
         total_viajes = sum(float(v["monto"]) + float(v["propina"] or 0) for v in viajes)
         total_gastos = sum(float(g["monto"]) for g in gastos)
+        ganancia_neta = round(total_viajes - total_gastos, 2)
 
         return {
             "fecha": str(date.today()),
@@ -71,7 +80,9 @@ async def get_resumen_jornada(conductor_id: str = "default") -> dict:
             "total_viajes": len(viajes),
             "ingresos_brutos": round(total_viajes, 2),
             "total_gastos": round(total_gastos, 2),
-            "ganancia_neta": round(total_viajes - total_gastos, 2),
+            "ganancia_neta": ganancia_neta,
+            "distancia_gps_km": round(distancia_km, 2),
+            "eficiencia_mxn_km": round(ganancia_neta / distancia_km, 2) if distancia_km > 0 else None,
             "viajes_detalle": [dict(v) for v in viajes],
             "gastos_detalle": [dict(g) for g in gastos],
         }

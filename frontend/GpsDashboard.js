@@ -120,9 +120,16 @@ function _onPosition(pos, token) {
     const ahora = Date.now();
     if (ahora - _gpsState.ultimoTs < GPS_THROTTLE_MS) return; // throttle
 
-    const { latitude: lat, longitude: lng, speed } = pos.coords;
+    const { latitude: lat, longitude: lng, speed, accuracy } = pos.coords;
+
+    // Descartar puntos con precisión pobre (>50m)
+    if (accuracy > 50) {
+        console.debug('[GPS] Punto descartado: accuracy', accuracy, 'm');
+        return;
+    }
+
     const velKmh = speed != null ? speed * 3.6 : null;
-    const punto  = { lat, lng, vel_kmh: velKmh, ts: new Date().toISOString() };
+    const punto  = { lat, lng, vel_kmh: velKmh, precision_m: accuracy, ts: new Date().toISOString() };
 
     // Distancia local acumulada
     if (_gpsState.ultimoPunto) {

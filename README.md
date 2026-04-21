@@ -21,6 +21,23 @@ YAGA resuelve ese problema con **una sola interfaz: la voz**. El conductor dice 
 
 El producto es una **PWA offline-first** que funciona en cualquier Android de gama media, se instala como app nativa y sigue registrando viajes aunque el conductor pierda cobertura en un túnel o en un estacionamiento subterráneo. Cuando vuelve la red, sincroniza en batch. La interfaz está diseñada como tablero de cabina: alto contraste, lectura periférica, cero scroll en la información crítica.
 
+### Vista de pájaro — flujo completo
+
+```mermaid
+flowchart LR
+    U([Conductor]) -->|voz| PWA[PWA offline-first<br/>SpeechRecognition]
+    PWA -->|HTTPS + JWT| CF[Cloudflare<br/>DNS / CDN / TLS]
+    CF --> WAF[nginx + ModSecurity CRS<br/>WAF]
+    WAF --> API[FastAPI<br/>HS256 · rate limit]
+    API --> NLP[NLP determinista<br/>13 intents · regex]
+    API --> VK[(Valkey 7<br/>refresh tokens<br/>rate limit)]
+    NLP --> SVC[Servicios<br/>viajes · gastos · jornadas]
+    SVC --> CRY[AES-256-GCM<br/>cifrado en capa de app]
+    CRY --> PG[(PostgreSQL 16<br/>particionado mensual)]
+    PG --> DASH[Dashboard cockpit<br/>Leaflet + resumen]
+    DASH --> U
+```
+
 ---
 
 ## Cómo funciona el NLP
@@ -59,6 +76,37 @@ METODO_PAGO   = {"efectivo", "tarjeta", "app", "qr"}
 
 Si ninguna regla matchea, el comando cae al intent `desconocido` y se registra en la tabla `nlp_failed_commands`. Esa tabla es la fuente de verdad para refinar patrones — en lugar de "entrenar un modelo", nosotros leemos frases reales cada semana y extendemos las regex.
 
+### Workflow del procesamiento de voz
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Conductor
+    participant PWA as PWA (Navegador)
+    participant WAF as nginx + WAF
+    participant API as FastAPI
+    participant NLP as Clasificador NLP
+    participant SVC as Servicio (viajes/gastos)
+    participant DB as PostgreSQL
+
+    U->>PWA: "registra viaje 180 uber efectivo propina 20"
+    PWA->>PWA: SpeechRecognition → texto
+    PWA->>WAF: POST /api/v1/command { text, jwt }
+    WAF->>API: proxy_pass (rate limit + CRS)
+    API->>API: verify JWT HS256 + rate limit
+    API->>NLP: classify(text)
+    NLP-->>API: intent=registrar_viaje<br/>entities={monto:180, plataforma:uber,<br/>metodo:efectivo, propina:20}
+    API->>API: validar rango monto (1–5000 MXN)
+    API->>SVC: registrar_viaje(jornada_id, entities)
+    SVC->>DB: INSERT viajes + UPDATE jornada
+    DB-->>SVC: id, total_jornada
+    SVC-->>API: saved
+    API-->>PWA: { message, data }
+    PWA-->>U: TTS "listo, llevas $1,240 en la jornada"
+```
+
+Si el audio no se entiende, si el monto es absurdo o si el intent es desconocido, el comando se preserva en `nlp_failed_commands` para refinar reglas — nunca se pierde el contexto del conductor.
+
 ---
 
 ## Flujo GPS end-to-end
@@ -89,6 +137,45 @@ El filtrado en cliente descarta lecturas con `accuracy > 50m` y rechaza puntos q
 
 ## Arquitectura e infraestructura
 
+### Diagrama por capas
+
+```mermaid
+flowchart TB
+    subgraph cliente["Cliente · dispositivo del conductor"]
+        PWA["PWA (HTML monolítico)<br/>Service Worker · IndexedDB<br/>SpeechRecognition · Leaflet"]
+    end
+
+    subgraph perim["Perímetro"]
+        CF["Cloudflare<br/>DNS + CDN + TLS"]
+        NGX["nginx + ModSecurity CRS<br/>WAF · /docs bloqueado"]
+    end
+
+    subgraph ec2["AWS EC2 t3.small · Docker Compose"]
+        API["FastAPI + uvicorn<br/>rate limiting (slowapi)"]
+        AUTH["Auth HS256<br/>bcrypt · refresh rotation"]
+        NLP["NLP determinista<br/>13 intents · regex"]
+        CRY["AES-256-GCM<br/>cifrado en capa de app"]
+        WS["WebSocket<br/>Poleana"]
+    end
+
+    subgraph datos["Estado persistente"]
+        PG[("PostgreSQL 16<br/>particionado mensual")]
+        VK[("Valkey 7<br/>refresh + rate limit")]
+    end
+
+    PWA -->|HTTPS| CF --> NGX --> API
+    API --> AUTH
+    API --> NLP
+    API --> WS
+    AUTH --> VK
+    NLP --> CRY
+    CRY --> PG
+    AUTH --> PG
+    WS --> VK
+```
+
+### Stack
+
 | Capa          | Tecnología                                                                      |
 |---------------|----------------------------------------------------------------------------------|
 | Backend       | FastAPI (Python 3.11), asyncpg directo (sin ORM), JWT HS256, bcrypt rounds=12   |
@@ -112,6 +199,86 @@ El filtrado en cliente descarta lecturas con `accuracy > 50m` y rechaza puntos q
 ¿Por qué una sola t3.small soporta la carga actual? Porque el tráfico real es **<1 req/s promedio** y los picos de voz consumen <200ms de CPU. Sobre-dimensionar antes de tiempo es la forma más rápida de quemar runway sin aprender nada del producto.
 
 La autenticación vive en dos niveles: **access token JWT en memoria JS** (nunca en `localStorage`, se pierde al recargar — comportamiento intencional), y **refresh token en cookie `yaga_rt` HttpOnly + Secure + SameSite=Strict**, con rotación en cada uso, detección de reuse por familia y store en Valkey.
+
+---
+
+## Modelo de datos
+
+PostgreSQL 16 con `asyncpg` directo (sin ORM). Las tablas de alto volumen (`viajes_historicos`, `jornada_gps_logs`) están **particionadas por mes**. Columnas `*_cifrado` (BYTEA) guardan PII cifrada con AES-256-GCM; sus contrapartes en texto existen solo cuando hace falta un índice de lookup (`email`, `phone`).
+
+```mermaid
+erDiagram
+    usuarios ||--o{ jornadas : "inicia"
+    usuarios ||--o{ consentimientos : "otorga"
+    usuarios ||--o{ auditoria : "genera"
+    usuarios ||--o{ viajes_historicos : "posee"
+    jornadas ||--o{ viajes : "contiene"
+    jornadas ||--o{ gastos : "registra"
+    jornadas ||--o{ jornada_gps_logs : "emite"
+
+    usuarios {
+        uuid id PK
+        text email "indexado"
+        bytea email_cifrado "AES-256"
+        bytea phone_cifrado "AES-256"
+        text password_hash "bcrypt r12"
+        text_array roles
+        timestamptz deleted_at "soft delete"
+    }
+    jornadas {
+        uuid id PK
+        uuid usuario_id FK
+        date fecha
+        timestamptz inicio
+        timestamptz fin
+        text estado
+    }
+    viajes {
+        uuid id PK
+        uuid jornada_id FK
+        numeric monto
+        text plataforma "uber/didi/..."
+        text metodo_pago "efectivo/tarjeta/app"
+        numeric propina
+    }
+    gastos {
+        uuid id PK
+        uuid jornada_id FK
+        numeric monto
+        text categoria "gasolina/comida/peaje"
+    }
+    jornada_gps_logs {
+        bigserial id PK
+        uuid jornada_id FK
+        bytea lat_cifrado "AES-256"
+        bytea lng_cifrado "AES-256"
+        bytea speed_cifrado "AES-256"
+        timestamptz ts "índice plano"
+    }
+    consentimientos {
+        serial id PK
+        uuid usuario_id FK
+        text finalidad "operacion/marketing/investigacion"
+        boolean estado
+        boolean es_obligatorio
+    }
+    auditoria {
+        bigserial id PK
+        uuid usuario_id
+        text accion
+        inet ip
+        text user_agent
+        jsonb detalles
+    }
+    viajes_historicos {
+        uuid id PK
+        text conductor_id "import legacy"
+        numeric monto
+        timestamptz fecha
+    }
+```
+
+Las cuatro **finalidades LFPDPPP** están modeladas en `consentimientos`: `operacion` es obligatoria (cuentas/pagos/KYC/fiscal); `marketing` e `investigacion` son opt-out. Cada acción crítica (login, ARCO, cambio de datos) deja traza en `auditoria` con IP, user-agent y `detalles` JSONB.
 
 ---
 

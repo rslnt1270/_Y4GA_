@@ -3,11 +3,14 @@
 Endpoint NLP: procesa comandos de voz de conductores mexicanos.
 Sprint 6: diccionario ampliado, logging de comandos no reconocidos.
 """
-from fastapi import APIRouter, Depends
+import asyncio
+
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 
 from core.logging import get_logger
 from dependencies import get_current_user
+from services.audit_service import log_action
 from services.jornada_service import (
     cerrar_jornada,
     get_or_create_jornada,
@@ -21,6 +24,17 @@ from services.nlp.intent_catalog import DriverIntent
 
 router = APIRouter()
 logger = get_logger("yaga.nlp")
+
+MONTO_MIN = 1
+MONTO_MAX = 5000
+
+
+def _monto_valido(monto) -> bool:
+    try:
+        m = float(monto)
+    except (TypeError, ValueError):
+        return False
+    return MONTO_MIN <= m <= MONTO_MAX
 
 # Intents que requieren guardar un gasto con categoría implícita
 _GASTO_INTENTS = {
@@ -53,6 +67,7 @@ class CommandRequest(BaseModel):
 
 @router.post("/command")
 async def process_command(
+    request: Request,
     body: CommandRequest,
     current_user: dict = Depends(get_current_user),
 ):
@@ -136,6 +151,23 @@ async def process_command(
                 "message": "❓ ¿Cuánto fue el viaje? Ejemplo: 'viaje uber efectivo 90'",
                 "data": None,
             }
+        if result.entities.monto is not None and not _monto_valido(result.entities.monto):
+            asyncio.create_task(log_action(
+                usuario_id=conductor_id,
+                accion="nlp_monto_rechazado",
+                ip=None,
+                user_agent=None,
+                detalles={
+                    "intent": intent.value,
+                    "monto": result.entities.monto,
+                    "texto": body.text[:200],
+                },
+            ))
+            return {
+                "intent": intent.value,
+                "message": f"❌ Monto fuera de rango (permitido: ${MONTO_MIN}–${MONTO_MAX} MXN)",
+                "data": None,
+            }
         saved = await registrar_viaje(jornada_id, result.entities)
         return {
             "intent": intent.value,
@@ -148,6 +180,23 @@ async def process_command(
             return {
                 "intent": intent.value,
                 "message": "❓ ¿Cuánto fue el gasto? Ejemplo: 'gasolina 300'",
+                "data": None,
+            }
+        if not _monto_valido(result.entities.monto):
+            asyncio.create_task(log_action(
+                usuario_id=conductor_id,
+                accion="nlp_monto_rechazado",
+                ip=None,
+                user_agent=None,
+                detalles={
+                    "intent": intent.value,
+                    "monto": result.entities.monto,
+                    "texto": body.text[:200],
+                },
+            ))
+            return {
+                "intent": intent.value,
+                "message": f"❌ Monto fuera de rango (permitido: ${MONTO_MIN}–${MONTO_MAX} MXN)",
                 "data": None,
             }
         saved = await registrar_gasto(jornada_id, result.entities)

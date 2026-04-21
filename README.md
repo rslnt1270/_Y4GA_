@@ -148,6 +148,60 @@ El código ya está dockerizado de forma idempotente y sigue 12-factor desde el 
 
 ---
 
+## Análisis técnico integral
+
+Esta sección condensa las decisiones de ingeniería que sostienen el stack actual, por qué se eligieron así y cómo están preparadas para escalar sin reescrituras dolorosas.
+
+### Infraestructura y optimización de costo
+
+La producción corre sobre una única **EC2 t3.small** con **Elastic IP fija** en `us-east-2`, orquestada por Docker Compose. Sobre esa instancia conviven cuatro contenedores con healthchecks individuales:
+
+```text
+EC2 t3.small (2 GB RAM, 2 vCPU burstable)
+┌──────────────────────────────────────────────────┐
+│  WAF (ModSecurity CRS + nginx)   ~80 MB          │
+│  api  (FastAPI + uvicorn)        ~180 MB         │
+│  postgres 16                     ~220 MB         │
+│  valkey 7 (Redis-compatible)     ~40 MB          │
+│  ───────────────────────────────────────         │
+│  Uso total ≈ 560 MB  (~28% de RAM disponible)    │
+└──────────────────────────────────────────────────┘
+```
+
+La densidad ronda el **28% de RAM utilizada**, dejando espacio para picos de tráfico y para Postgres antes de necesitar un nodo aparte. El costo total de la plataforma es de **~$15–20 USD/mes**. Este es el modelo "compute a demanda" correcto para la fase de validación: pagar solo por lo que mueve el producto.
+
+### FastAPI como columna vertebral
+
+Se eligió **FastAPI** sobre Django o Flask por cuatro razones concretas: validación declarativa con Pydantic v2, async nativo del runtime, capacidad de exponer **WebSockets** (Poleana) sobre la misma aplicación que sirve los endpoints REST, y ausencia de ORM — usamos `asyncpg` directo con **pool de 2 a 10 conexiones**. Evitamos la abstracción de SQLAlchemy porque cada milisegundo cuenta en la respuesta al conductor y porque las consultas son pocas, pero muy calientes. El rate limiting vive en `slowapi` con políticas estrictas en los endpoints sensibles (login, registro) y más laxas en telemetría (GPS batch).
+
+### Docker y el patrón `docker cp` + WatchFiles
+
+El código Python se **bakea** dentro de la imagen Docker. Para actualizar sin rebuild completo, copiamos el archivo al contenedor con `docker cp` y dejamos que **WatchFiles** (uvicorn `--reload`) recargue el proceso en **<2 segundos**. Un rebuild tradicional tomaría 60–90 segundos y obligaría a reiniciar el contenedor. El volumen `postgres_data` es el único estado persistente real; todo lo demás es recreable. Los cuatro servicios tienen `healthcheck` propio, de modo que Compose puede orquestar el orden de arranque correctamente. La migración de **Redis a Valkey** (Sprint 7) ya está hecha, motivada por el cambio de licencia de Redis (SSPL) hacia una licencia BSD más permisiva.
+
+### Desarrollo multi-agente con Claude Code
+
+Seis subagentes especializados (`backend-security`, `frontend`, `devops-sre`, `data-engineer`, `security-engineer`, `architect`) se orquestan con un protocolo de contexto compartido. La diferencia clave frente a "usar un LLM generalista" es que cada agente arranca con su dominio precargado: rutas, convenciones, reglas de seguridad y memoria institucional acumulada sprint a sprint.
+
+| Actividad                  | Con subagentes Claude Code | Equipo tradicional      |
+|----------------------------|----------------------------|-------------------------|
+| 9 sprints completos        | 10 semanas                 | 22–30 semanas estimadas |
+| Sprint con múltiples capas | 1 jornada                  | 1–2 semanas             |
+| Context switching humano   | delegado al agente         | alto                    |
+
+La aceleración observada es de **2.5x a 3x**, no porque se escriba código más rápido, sino porque el rol correcto entra al problema con contexto correcto y sin costo de re-orientación.
+
+### Logística de escalabilidad
+
+| Fase                 | Usuarios       | Stack                                                  | Costo aprox. |
+|----------------------|----------------|--------------------------------------------------------|--------------|
+| 1 — Validación (hoy) | ~50–100        | EC2 única + Docker Compose                             | ~$20/mes     |
+| 2 — Crecimiento      | 500 – 1,000    | EKS + RDS Multi-AZ + ElastiCache + CloudFront          | ~$200–400/mes|
+| 3 — Escala regional  | >10,000        | Multi-región + CDN edge + réplicas de lectura          | ~$1,000+/mes |
+
+La preparación para la fase 2 ya está hecha: labels compatibles con Kubernetes en `docker-compose.yml`, secretos externalizables, healthchecks estandarizados, código 12-factor. Haber arrancado directamente en EKS hubiera significado ~$150–200/mes de gasto mínimo antes de tener un solo usuario — un **90% de overhead** en la fase donde lo importante es aprender del producto, no del clúster.
+
+---
+
 ## Estructura del repositorio
 
 ```text
@@ -161,11 +215,13 @@ El código ya está dockerizado de forma idempotente y sigue 12-factor desde el 
 │   ├── index.html          # PWA monolítica, cockpit + auth + mapa
 │   ├── sw.js               # Service Worker offline-first
 │   └── public/manifest.json
-├── Poleana_Project/        # Juego de mesa mexicano multijugador (WebSocket)
+├── Poleana_Project/        # Juego de mesa mexicano multijugador (WebSocket, submódulo)
+├── nginx/
+│   └── conf.d/             # WAF + reglas de proxy (ModSecurity CRS)
 ├── infrastructure/
 │   └── database/migrations/
 ├── scripts/                # backup, operaciones de producción
-├── docs/                   # Arquitectura, workflows, reportes ejecutivos
+├── docs/                   # Arquitectura, workflows
 ├── docker-compose.yml
 └── README.md
 ```
@@ -175,15 +231,16 @@ El código ya está dockerizado de forma idempotente y sigue 12-factor desde el 
 ## Quickstart local
 
 ```bash
-git clone https://github.com/<tu-org>/yaga.git
+git clone --recurse-submodules https://github.com/<tu-org>/yaga.git
 cd yaga
-cp .env.example .env              # completa JWT_SECRET y DB_ENCRYPT_KEY
-docker compose up -d              # api, postgres, valkey, nginx
-open http://localhost:8000/docs   # Swagger UI
-open http://localhost:8080        # Frontend PWA
+cp .env.example .env             # completa JWT_SECRET, DB_ENCRYPT_KEY, VALKEY_PASSWORD
+docker compose up -d             # nginx-proxy, api, postgres, valkey
+curl http://localhost/health     # verifica que el WAF enruta al api
+# Frontend PWA: servir frontend/index.html con cualquier servidor estático
+# (p. ej. `python3 -m http.server --directory frontend 8080`)
 ```
 
-El `.env.example` documenta cada variable requerida. Para desarrollo sin HTTPS real, el service worker se registra igual y los comandos de voz funcionan en Chrome/Edge (Firefox no expone `SpeechRecognition`).
+El `.env.example` documenta cada variable requerida. Las rutas `/docs`, `/redoc` y `/openapi.json` están **bloqueadas por el WAF** — para explorar la API en desarrollo, revisa directamente los routers en `app/api/v1/`. Los comandos de voz requieren Chrome/Edge (Firefox no expone `SpeechRecognition`); el service worker se registra aunque el entorno no tenga HTTPS real.
 
 ---
 

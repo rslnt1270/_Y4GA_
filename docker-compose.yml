@@ -4,7 +4,7 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.10-alpine
     container_name: yaga_postgres
     env_file: .env
     volumes:
@@ -49,8 +49,8 @@ services:
     build: ./app
     container_name: yaga_api
     env_file: .env
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -73,6 +73,33 @@ services:
       app.kubernetes.io/component: "backend"
       app.kubernetes.io/part-of: "yaga"
       app.kubernetes.io/version: "0.5.0"
+
+  nginx-proxy:
+    image: owasp/modsecurity-crs:nginx
+    container_name: yaga_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d/default.conf:/etc/nginx/templates/conf.d/default.conf.template:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    labels:
+      app.kubernetes.io/name: "nginx-proxy"
+      app.kubernetes.io/component: "ingress"
+      app.kubernetes.io/part-of: "yaga"
 
 volumes:
   postgres_data:

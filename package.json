@@ -1,0 +1,13 @@
+{
+  "name": "y4ga",
+  "version": "0.0.1",
+  "private": true,
+  "description": "YAGA — PWA estática servida via Cloudflare Workers",
+  "scripts": {
+    "build": "echo 'No build step — static assets only'",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.101.0"
+  }
+}

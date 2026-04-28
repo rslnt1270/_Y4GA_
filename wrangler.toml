@@ -1,0 +1,10 @@
+# © YAGA Project — Todos los derechos reservados
+# wrangler.toml — Cloudflare Workers: servidor estático del frontend YAGA
+
+name = "y4ga"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./frontend"
+binding = "ASSETS"

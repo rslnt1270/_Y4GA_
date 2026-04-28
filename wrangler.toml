@@ -1,11 +1,10 @@
 # © YAGA Project — Todos los derechos reservados
 # wrangler.toml — Cloudflare Workers: servidor estático del frontend YAGA
-#
-# El Worker sirve los archivos de frontend/ como static assets.
-# Las rutas y el account_id se configuran en el dashboard de Cloudflare.
 
 name = "y4ga"
+main = "src/worker.js"
 compatibility_date = "2025-01-01"
 
 [assets]
 directory = "./frontend"
+binding = "ASSETS"

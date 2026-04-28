@@ -10,22 +10,14 @@
   <title>YAGA</title>
   <link rel="manifest" href="/yaga/manifest.json" />
   <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/yaga/sw.js', { scope: '/yaga/' }).catch(() => {});</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Space+Mono&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="/yaga/styles/tokens.css" />
   <style>
-    :root {
-      --bg:        #0f1923;
-      --surface:   #1a2636;
-      --border:    #253447;
-      --accent:    #00e5a0;
-      --warn:      #f5a623;
-      --danger:    #e05555;
-      --text:      #e8f0f7;
-      --muted:     #6b8299;
-      --font:      'Inter', system-ui, sans-serif;
-    }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -65,16 +57,17 @@
     .btn-back.visible { display: flex; }
     .btn-back:hover { border-color: var(--accent); color: var(--accent); }
     .logo {
+      font-family: var(--font-display);
       font-size: 1.1rem;
-      font-weight: 900;
+      font-weight: 700;
       letter-spacing: 4px;
-      color: var(--accent);
+      color: var(--text);
       text-transform: uppercase;
     }
     .status-dot {
       width: 10px; height: 10px; border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
+      background: var(--ui-active);
+      box-shadow: 0 0 6px rgba(221, 234, 247, .35);
       animation: pulse 2s infinite;
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
@@ -297,11 +290,16 @@
       margin-bottom: 2px;
     }
     .metric-big .value {
+      font-family: var(--font-display);
       font-size: 2.55rem;
-      font-weight: 900;
+      font-weight: 700;
       line-height: 1;
-      color: var(--accent);
+      color: var(--positive);
       letter-spacing: -1.5px;
+    }
+    .metric-big .value.zero { color: var(--muted); }
+    .metric-big .label {
+      font-family: var(--font-mono);
     }
     .metric-big .value.money::before {
       content: '$';
@@ -1776,6 +1774,11 @@
       </div>
       <button class="arco-btn" style="margin-top:10px" onclick="abrirModalConsentimientos()">Administrar por canal</button>
     </div>
+    <!-- Sección: Sesiones activas -->
+    <div class="arco-section" id="arcoSesiones">
+      <h3>Sesiones activas</h3>
+      <div id="sesionesLista" style="font-size:13px;color:var(--muted)">Cargando…</div>
+    </div>
     <!-- Sección: Cancelar cuenta -->
     <div class="arco-section">
       <h3>Eliminar mi cuenta</h3>
@@ -2080,11 +2083,14 @@
     ingresosBrutos.textContent  = data.ingresos_brutos.toFixed(2);
     totalGastos.textContent     = '$' + data.total_gastos.toFixed(2);
     gananciaNeta.textContent    = '$' + neta.toFixed(2);
-    gananciaNeta.style.color    = neta >= 0 ? 'var(--accent)' : 'var(--danger)';
+    // Sprint 11 Fase 01: usar tokens semánticos (positivo/zero/negativo)
+    ingresosBrutos.classList.toggle('zero', !data.ingresos_brutos);
+    gananciaNeta.classList.toggle('zero', neta === 0);
+    gananciaNeta.style.color    = neta > 0 ? 'var(--positive)' : (neta < 0 ? 'var(--negative)' : '');
     bBrutos.textContent = '$' + data.ingresos_brutos.toFixed(2);
     bGastos.textContent = '$' + data.total_gastos.toFixed(2);
     bNeta.textContent   = '$' + neta.toFixed(2);
-    bNeta.style.color   = neta >= 0 ? 'var(--accent)' : 'var(--danger)';
+    bNeta.style.color   = neta > 0 ? 'var(--positive)' : (neta < 0 ? 'var(--negative)' : '');
 
     // Viajes
     if (!data.viajes_detalle || data.viajes_detalle.length === 0) {
@@ -2521,10 +2527,63 @@
         if ($('toggleMarketing'))     $('toggleMarketing').checked     = valActivo(mk);
         if ($('toggleInvestigacion')) $('toggleInvestigacion').checked = valActivo(inv);
       }
+      await arcoCargarSesiones();
     } catch (e) {
       showToast('Error al cargar datos');
     }
   }
+
+  // Sprint 11: panel de sesiones activas (refresh tokens / familias)
+  async function arcoCargarSesiones() {
+    const cont = $('sesionesLista');
+    if (!cont) return;
+    try {
+      const res = await apiFetch('/arco/sesiones');
+      if (!res.ok) {
+        cont.textContent = 'No se pudieron cargar las sesiones';
+        return;
+      }
+      const data = await res.json();
+      const sesiones = data.sesiones || [];
+      if (sesiones.length === 0) {
+        cont.innerHTML = '<div style="color:var(--muted);font-size:13px">No hay sesiones activas registradas.</div>';
+        return;
+      }
+      cont.innerHTML = sesiones.map(s => {
+        const fecha = s.creado_en ? new Date(s.creado_en).toLocaleString('es-MX') : '—';
+        const ip = s.ip || '—';
+        const ua = (s.user_agent_resumido || '').replace(/[<>]/g, '');
+        const fid = s.familia_id;
+        return `
+          <div class="sesion-item" style="padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="font-size:12px;color:var(--text);font-weight:600">${fecha}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">IP: ${ip}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${ua || 'Sin user-agent'}</div>
+            <button class="arco-btn danger" style="margin-top:8px;font-size:12px;padding:6px 12px"
+                    onclick="arcoRevocarSesion('${fid}')">Cerrar sesión</button>
+          </div>`;
+      }).join('');
+    } catch (e) {
+      cont.textContent = 'Error de conexión';
+    }
+  }
+
+  async function arcoRevocarSesion(familiaId) {
+    if (!familiaId) return;
+    if (!confirm('¿Cerrar esta sesión? El dispositivo deberá iniciar sesión nuevamente.')) return;
+    try {
+      const res = await apiFetch('/arco/sesiones/' + encodeURIComponent(familiaId), { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Sesión cerrada');
+        await arcoCargarSesiones();
+      } else {
+        showToast('No se pudo cerrar la sesión');
+      }
+    } catch (e) {
+      showToast('Error de conexión');
+    }
+  }
+  window.arcoRevocarSesion = arcoRevocarSesion;
 
   async function arcoRectificar() {
     const nombre = $('arcoInputNombre').value.trim();

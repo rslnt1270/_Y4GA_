@@ -1,0 +1,147 @@
+/* © YAGA Project — Todos los derechos reservados */
+/* tokens.css — Sistema de design tokens Fase 01 (Sprint 11)
+ *
+ * Basado en handoff "CLAUDE_CODE_HANDOFF_FASE_01.md" del proyecto Stitch.
+ * Incluye paleta semántica + escala tipográfica + aliases legacy.
+ */
+
+:root {
+  /* ── PALETA BASE ── */
+  --bg:        #0c1520;     /* shell */
+  --surface:   #111e2d;     /* cards y secciones */
+  --surface-2: #172538;     /* cards anidadas */
+  --border:    #1e3248;     /* bordes principales */
+  --dim:       #2a4460;     /* separadores tenues */
+  --text:      #ddeaf7;     /* texto principal */
+  --muted:     #7d98b2;     /* texto secundario (AA contrast) */
+
+  /* ── SEMÁNTICA — usar SOLO con su rol ── */
+  --positive:  #00e5a0;     /* ganancia / valores positivos */
+  --negative:  #e05555;     /* gasto / valores negativos */
+  --neutral:   #f5a623;     /* neto / calculado */
+  --info:      #00b4d8;     /* informativo / acción secundaria */
+
+  /* ── UI NEUTRAL — reemplaza el verde decorativo ── */
+  --ui-active: #ddeaf7;     /* tabs activos, dots de status online */
+
+  /* ── TIPOGRAFÍA ── */
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-mono:    'Space Mono', ui-monospace, monospace;
+
+  /* Escala de 5 pasos */
+  --t-label:    9px;        /* uppercase labels */
+  --t-caption:  11px;
+  --t-body:     13px;
+  --t-h2:       18px;
+  --t-stat:     28px;
+  --t-hero:     44px;
+
+  /* ── LEGACY ALIASES — no eliminar (compatibilidad CSS existente) ── */
+  --accent:    var(--positive);
+  --warn:      var(--neutral);
+  --danger:    var(--negative);
+  --font:      var(--font-body);
+
+  /* ── COMPAT semántica adicional ── */
+  --color-success: var(--positive);
+  --color-warning: var(--neutral);
+  --color-error:   var(--negative);
+  --color-info:    var(--info);
+}
+
+/* ── Componentes base derivados de tokens ── */
+
+/* Tipografía displayl en logos, stats numéricos, encabezados */
+.font-display,
+.logo,
+h1,
+h2,
+.hero-value,
+.hero-val,
+.stat-value,
+.num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Variante zero: número apagado cuando vale 0 */
+.hero-value.zero,
+.hero-val.zero,
+.stat-value.zero,
+.num.zero {
+  color: var(--muted) !important;
+}
+
+/* ── Empty state reutilizable ── */
+.empty-state-card {
+  margin: 16px 18px;
+  padding: 28px 20px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+}
+.empty-state-card .empty-icon {
+  display: inline-flex;
+  width: 56px; height: 56px;
+  align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.empty-state-card .empty-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--text); margin-bottom: 4px;
+}
+.empty-state-card .empty-desc {
+  font-size: 12px; color: var(--muted);
+  line-height: 1.5; max-width: 280px;
+  margin: 0 auto 16px;
+}
+.empty-state-card .empty-cta {
+  background: var(--positive);
+  color: var(--bg);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.empty-state-card .empty-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 229, 160, 0.25);
+}
+.empty-state-card .empty-cta:active { transform: translateY(0); }
+
+/* ── Hero stat (jornada) ── */
+.hero-stat {
+  padding: 20px 18px 12px;
+}
+.hero-stat .hero-label {
+  font-family: var(--font-mono);
+  font-size: var(--t-label);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.hero-stat .hero-value {
+  font-family: var(--font-display);
+  font-size: var(--t-hero);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--positive);
+  letter-spacing: -0.02em;
+}
+.hero-stat .hero-decimals { font-size: 22px; opacity: 0.7; }
+.hero-stat .hero-meta {
+  font-size: var(--t-caption);
+  color: var(--muted);
+  margin-top: 6px;
+}

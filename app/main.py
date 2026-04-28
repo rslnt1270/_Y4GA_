@@ -2,9 +2,13 @@
 """
 YAGA PROJECT - API Principal v0.5.0
 """
+import asyncio
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import redis.asyncio as aioredis
 from api.v1.nlp import router as nlp_router
 from api.v1.vehiculo import router as vehiculo_router
 from api.v1.auth import router as auth_router
@@ -62,7 +66,37 @@ app.include_router(poleana_router)
 
 @app.get("/health", tags=["Health"])
 async def health():
-    return {"status": "ok", "service": "yaga-conductores", "version": "0.4.0"}
+    checks: dict = {"db": "unknown", "redis": "unknown"}
+    all_ok = True
+
+    try:
+        pool = await get_pool()
+        async with asyncio.timeout(1.0):
+            await pool.fetchval("SELECT 1")
+        checks["db"] = "ok"
+    except Exception as e:
+        checks["db"] = f"error: {type(e).__name__}"
+        all_ok = False
+
+    try:
+        r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
+        try:
+            async with asyncio.timeout(1.0):
+                await r.ping()
+            checks["redis"] = "ok"
+        finally:
+            await r.aclose()
+    except Exception as e:
+        checks["redis"] = f"error: {type(e).__name__}"
+        all_ok = False
+
+    payload = {
+        "status": "ok" if all_ok else "degraded",
+        "service": "yaga-conductores",
+        "version": app.version,
+        "checks": checks,
+    }
+    return JSONResponse(status_code=200 if all_ok else 503, content=payload)
 
 
 @app.post("/api/v1/jornada/cerrar", tags=["Operación"])

@@ -1,10 +1,22 @@
 # © YAGA Project — Todos los derechos reservados
-# wrangler.toml — Cloudflare Workers: servidor estático del frontend YAGA
+# wrangler.toml — Cloudflare Workers: PWA YAGA (y4ga.app)
 
 name = "y4ga"
 main = "src/worker.js"
-compatibility_date = "2025-01-01"
+compatibility_date = "2025-09-27"
+workers_dev = false
+
+[observability]
+enabled = true
 
 [assets]
 directory = "./frontend"
 binding = "ASSETS"
+
+[[routes]]
+pattern = "y4ga.app/*"
+zone_name = "y4ga.app"
+
+[[routes]]
+pattern = "www.y4ga.app/*"
+zone_name = "y4ga.app"

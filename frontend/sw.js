@@ -2,11 +2,11 @@
 // sw.js — Service Worker YAGA PWA v1.1
 // Estrategia: Cache-first para shell estático, Network-first para API.
 // Background Sync para GPS batch (offline-first).
-// Scope: /yaga/
+// Scope: /
 
 'use strict';
 
-const CACHE_NAME  = 'yaga-shell-v1';
+const CACHE_NAME  = 'yaga-shell-v2';
 const API_PREFIX  = '/api/';
 
 // ── GPS Background Sync — config ─────────────────────────────────────────────
@@ -67,9 +67,9 @@ function _deleteGpsBatch(id) {
 
 // Archivos del shell que se pre-cachean en install
 const SHELL_URLS = [
-    '/yaga/',
-    '/yaga/manifest.json',
-    '/yaga/offline.html',
+    '/',
+    '/manifest.json',
+    '/offline.html',
 ];
 
 // ── INSTALL: pre-cachear el shell ─────────────────────────────────────────────
@@ -168,8 +168,8 @@ async function networkFirstNavigate(request) {
     } catch {
         // Sin red — servir desde caché
         const cached = await caches.match(request)
-            || await caches.match('/yaga/')
-            || await caches.match('/yaga/offline.html');
+            || await caches.match('/')
+            || await caches.match('/offline.html');
         if (cached) return cached;
         return offlinePage();
     }

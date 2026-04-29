@@ -2,7 +2,7 @@
 // src/worker.js — Cloudflare Worker: sirve assets estáticos y proxea API al EC2
 
 // HTTP directo a FastAPI — el TLS lo termina Cloudflare en el edge, no el EC2
-const BACKEND_ORIGIN = 'http://ec2-3-19-35-76.us-east-2.compute.amazonaws.com:8000';
+const BACKEND_ORIGIN = 'http://ec2-3-19-35-76.us-east-2.compute.amazonaws.com';
 
 const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
@@ -56,7 +56,7 @@ export default {
         method: request.method,
         headers: request.headers,
         body: ['GET', 'HEAD'].includes(request.method) ? null : request.body,
-        redirect: 'follow',
+        redirect: 'manual',
       });
       return fetch(proxyReq);
     }

@@ -1,7 +1,8 @@
 // © YAGA Project — Todos los derechos reservados
 // src/worker.js — Cloudflare Worker: sirve assets estáticos y proxea API al EC2
 
-const BACKEND_ORIGIN = 'https://ec2-3-19-35-76.us-east-2.compute.amazonaws.com';
+// HTTP directo a FastAPI — el TLS lo termina Cloudflare en el edge, no el EC2
+const BACKEND_ORIGIN = 'http://ec2-3-19-35-76.us-east-2.compute.amazonaws.com:8000';
 
 const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
@@ -33,9 +34,18 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // ── Proxy /api/* y /ws/* al backend EC2 ────────────────────────────────────
-    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) {
-      const backendUrl = new URL(url.pathname + url.search, BACKEND_ORIGIN);
+    // ── Redirigir raíz a landing page ──────────────────────────────────────────
+    if (url.pathname === '/') {
+      return Response.redirect(url.origin + '/landing.html', 302);
+    }
+
+    // ── Proxy /api/* /ws/* /poleana/* /health al backend EC2 ──────────────────
+    if (url.pathname.startsWith('/api/') ||
+        url.pathname.startsWith('/ws/') ||
+        url.pathname.startsWith('/poleana/') ||
+        url.pathname === '/poleana' ||
+        url.pathname === '/health') {
+      const backendUrl = new URL(url.pathname + url.search, 'http://ec2-3-19-35-76.us-east-2.compute.amazonaws.com');
 
       // WebSocket upgrade
       if (request.headers.get('Upgrade') === 'websocket') {

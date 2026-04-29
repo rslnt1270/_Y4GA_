@@ -60,6 +60,10 @@ def _client_ua(request: Request) -> str:
 
 router = APIRouter()
 
+# Precomputado al import time (~150ms one-shot). Iguala latencia bcrypt cuando el email no
+# existe para prevenir user enumeration por timing (OWASP A07).
+_DUMMY_PASSWORD_HASH = hash_password("_yaga_timing_equalization_dummy_")
+
 # ── Config email ──────────────────────────────────────────────────────────────
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -246,9 +250,14 @@ async def login(
             window_seconds=900,
         )
 
-    if not row or not verify_password(body.password, row["password_hash"]):
+    if not row:
+        # Igualar latencia bcrypt aunque el email no exista — previene timing oracle
+        verify_password(body.password, _DUMMY_PASSWORD_HASH)
+        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+
+    if not verify_password(body.password, row["password_hash"]):
         asyncio.create_task(log_action(
-            usuario_id=str(row["id"]) if row else None,
+            usuario_id=str(row["id"]),
             accion="login_fallido",
             ip=ip,
             user_agent=ua,

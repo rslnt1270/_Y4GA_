@@ -96,6 +96,8 @@ async def create_refresh_token(
             "cap_absoluto": cap.isoformat(),
             "revocada":     "0",
             "motivo":       "",
+            "ip":           ip or "",
+            "user_agent":   (user_agent or "")[:512],
         })
         pipe.expire(_k_familia(familia_id), FAMILIA_CAP_SECONDS)
 
@@ -211,6 +213,25 @@ async def revoke_all_families_for_user(usuario_id: str, motivo: str) -> int:
     for fid in familias:
         await _mark_family_revoked(fid, motivo=motivo)
     return len(familias)
+
+
+async def list_families_for_user(usuario_id: str) -> list[dict]:
+    """Lista familias activas del usuario para el panel ARCO de sesiones."""
+    familias_ids = await redis_client.smembers(_k_idx_user(usuario_id)) or set()
+    result = []
+    for fid in familias_ids:
+        data = await redis_client.hgetall(_k_familia(fid))
+        if not data or data.get("revocada") == "1":
+            continue
+        ua = data.get("user_agent", "")
+        result.append({
+            "familia_id":          fid,
+            "creado_en":           data.get("creado_en", ""),
+            "ip":                  data.get("ip", ""),
+            "user_agent_resumido": ua[:80] if ua else "",
+        })
+    result.sort(key=lambda x: x["creado_en"], reverse=True)
+    return result
 
 
 async def _mark_family_revoked(familia_id: str, motivo: str) -> None:

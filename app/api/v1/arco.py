@@ -23,6 +23,7 @@ from services.arco_service import (
     rectificar_datos,
 )
 from services.audit_service import log_action
+from services.refresh_service import list_families_for_user, revoke_family, revoke_all_families_for_user
 
 
 router = APIRouter()
@@ -107,6 +108,11 @@ async def arco_rectificacion(
         nombre=body.nombre,
     )
 
+    if body.email is not None:
+        asyncio.create_task(
+            revoke_all_families_for_user(usuario_id, "arco_rectificacion_email")
+        )
+
     asyncio.create_task(
         log_action(
             usuario_id=usuario_id,
@@ -182,3 +188,56 @@ async def arco_oposicion(
         )
     )
     return resultado
+
+
+# ── GET /arco/sesiones ────────────────────────────────────────────────────────
+
+
+@router.get("/arco/sesiones")
+@limiter.limit("10/minute")
+async def arco_sesiones(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Lista las sesiones activas del usuario (familias de refresh token).
+    Parte del derecho de Acceso ARCO — transparencia sobre dispositivos conectados.
+    """
+    usuario_id = str(current_user["id"])
+    sesiones = await list_families_for_user(usuario_id)
+    return {"sesiones": sesiones}
+
+
+# ── DELETE /arco/sesiones/{familia_id} ────────────────────────────────────────
+
+
+@router.delete("/arco/sesiones/{familia_id}")
+@limiter.limit("5/minute")
+async def arco_revocar_sesion(
+    familia_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Revoca una sesión específica (familia de refresh token).
+    Solo puede revocar sesiones propias — validación de propiedad para prevenir IDOR.
+    """
+    from fastapi import HTTPException
+    usuario_id = str(current_user["id"])
+
+    sesiones = await list_families_for_user(usuario_id)
+    ids_validos = {s["familia_id"] for s in sesiones}
+    if familia_id not in ids_validos:
+        raise HTTPException(status_code=403, detail="Sin permisos para revocar esta sesión")
+
+    await revoke_family(familia_id, motivo="arco_sesion_revocada")
+    asyncio.create_task(
+        log_action(
+            usuario_id=usuario_id,
+            accion="arco_sesion_revocada",
+            ip=_client_ip(request),
+            user_agent=_client_ua(request),
+            detalles={"familia_id": familia_id},
+        )
+    )
+    return {"revocada": True}

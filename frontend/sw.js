@@ -6,7 +6,7 @@
 
 'use strict';
 
-const CACHE_NAME  = 'yaga-shell-v2';
+const CACHE_NAME  = 'yaga-shell-v11';
 const API_PREFIX  = '/api/';
 
 // ── GPS Background Sync — config ─────────────────────────────────────────────
@@ -70,6 +70,9 @@ const SHELL_URLS = [
     '/',
     '/manifest.json',
     '/offline.html',
+    '/styles/tokens.css',
+    '/modules/auth.js',
+    '/modules/api-client.js',
 ];
 
 // ── INSTALL: pre-cachear el shell ─────────────────────────────────────────────

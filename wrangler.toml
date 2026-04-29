@@ -12,6 +12,7 @@ enabled = true
 [assets]
 directory = "./frontend"
 binding = "ASSETS"
+html_handling = "none"
 
 [[routes]]
 pattern = "y4ga.app/*"

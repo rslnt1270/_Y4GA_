@@ -6,7 +6,7 @@
 
 'use strict';
 
-const CACHE_NAME  = 'yaga-shell-v11';
+const CACHE_NAME  = 'yaga-shell-v12';
 const API_PREFIX  = '/api/';
 
 // ── GPS Background Sync — config ─────────────────────────────────────────────
@@ -67,7 +67,8 @@ function _deleteGpsBatch(id) {
 
 // Archivos del shell que se pre-cachean en install
 const SHELL_URLS = [
-    '/',
+    '/landing.html',
+    '/index.html',
     '/manifest.json',
     '/offline.html',
     '/styles/tokens.css',

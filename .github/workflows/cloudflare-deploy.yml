@@ -10,7 +10,8 @@ on:
       - main
     paths:
       - 'frontend/**'
-      - 'wrangler.jsonc'
+      - 'src/**'
+      - 'wrangler.toml'
       - '.github/workflows/cloudflare-deploy.yml'
   workflow_dispatch:
 

@@ -1,0 +1,1400 @@
+// © YAGA Project — Todos los derechos reservados
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>YAGA — Mapa de Jornadas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg:       #06101a;
+  --surface:  #0b1825;
+  --surface2: #0f2030;
+  --border:   #1a3048;
+  --muted:    #4d7a9a;
+  --text:     #d4eaf7;
+  --cyan:     #00e5a0;
+  --blue:     #00b4d8;
+  --purple:   #818cf8;
+  --amber:    #f59e0b;
+  --coral:    #f87171;
+  --teal:     #2dd4bf;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg);
+  font-family: 'Space Grotesk', sans-serif;
+  color: var(--text);
+  display: flex;
+  height: 100vh;
+}
+
+/* ── SIDEBAR ──────────────────────────────────────────── */
+.sidebar {
+  width: 282px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden; position: relative; z-index: 500;
+}
+.driver-header {
+  padding: 20px 16px 15px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 11px;
+}
+.driver-avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: var(--bg);
+}
+.driver-name { font-size: 13px; font-weight: 600; line-height: 1.3; }
+.driver-meta {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; color: var(--muted);
+  letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px;
+}
+.live-badge {
+  margin-left: auto; flex-shrink: 0;
+  display: flex; align-items: center; gap: 5px;
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  color: var(--cyan); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.day-tabs {
+  display: flex; border-bottom: 1px solid var(--border);
+  padding: 10px 12px 0;
+}
+.day-tab {
+  flex: 1; padding: 7px 4px 9px; text-align: center;
+  font-size: 11px; font-weight: 500; color: var(--muted);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.18s;
+}
+.day-tab:hover { color: var(--text); }
+.day-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.day-tab .sub { font-family: 'Space Mono', monospace; font-size: 8px; display: block; opacity: 0.65; margin-top: 2px; }
+
+.day-summary { display: flex; border-bottom: 1px solid var(--border); }
+.ds-cell { flex: 1; padding: 11px 0; text-align: center; border-right: 1px solid var(--border); }
+.ds-cell:last-child { border-right: none; }
+.ds-val {
+  font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+  color: var(--cyan); letter-spacing: -0.02em;
+}
+.ds-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+
+.filter-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  background: rgba(15,32,48,0.4); position: relative;
+}
+.fb-btn {
+  padding: 5px 10px; border-radius: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  font-size: 10px; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 5px;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.fb-btn:hover { border-color: rgba(0,229,160,0.3); }
+.fb-btn.active { background: rgba(0,229,160,0.1); border-color: var(--cyan); color: var(--cyan); }
+.fb-btn.reset { color: var(--muted); margin-left: auto; }
+.fb-count {
+  font-family: 'Space Mono', monospace; font-size: 9px;
+  color: var(--muted); letter-spacing: 0.1em;
+}
+
+.trip-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+.trip-list::-webkit-scrollbar { width: 3px; }
+.trip-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.trip-card {
+  padding: 11px 13px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+}
+.trip-card:hover { border-color: rgba(0,229,160,0.25); background: #112234; }
+.trip-card.sel { border-color: rgba(0,229,160,0.55); background: rgba(0,229,160,0.04); }
+.trip-card.dim { opacity: 0.35; }
+.tc-accent {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  border-radius: 2px 0 0 2px; opacity: 0; transition: opacity 0.2s;
+}
+.trip-card.sel .tc-accent { opacity: 1; }
+.tc-n {
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 5px; display: flex; align-items: center; gap: 6px;
+}
+.tc-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.tc-tag {
+  margin-left: auto; padding: 1px 5px; border-radius: 3px;
+  font-size: 7px; letter-spacing: 0.1em;
+  background: var(--bg); color: var(--muted);
+}
+.tc-route { font-size: 12px; font-weight: 600; line-height: 1.3; margin-bottom: 6px; }
+.tc-dest { color: var(--muted); font-weight: 400; }
+.tc-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip {
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  padding: 2px 6px; border-radius: 3px; letter-spacing: 0.05em;
+  background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+}
+.chip.hi { color: var(--cyan); border-color: rgba(0,229,160,0.3); }
+
+/* ── MAP AREA ───────────────────────────────────────────── */
+.map-area { flex: 1; position: relative; }
+#map { width: 100%; height: 100%; background: var(--bg); }
+.leaflet-container { background: #06101a !important; }
+.leaflet-attribution { display: none; }
+
+.map-title { position: absolute; top: 18px; left: 20px; pointer-events: none; z-index: 400; }
+.mt-label {
+  font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
+}
+.mt-city {
+  font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.6);
+}
+
+.map-controls {
+  position: absolute; top: 18px; right: 16px; z-index: 400;
+  display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+}
+.mc-group {
+  background: rgba(6,16,26,0.9); border: 1px solid var(--border);
+  border-radius: 9px; overflow: hidden; backdrop-filter: blur(16px);
+}
+.mc-btn {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 13px; cursor: default; transition: background 0.15s;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+.mc-btn + .mc-btn { border-top: 1px solid var(--border); }
+.mc-icon { font-size: 13px; line-height: 1; }
+.mc-val {
+  font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+  color: var(--cyan); margin-left: auto; letter-spacing: -0.02em;
+}
+
+.view-toggle {
+  background: rgba(6,16,26,0.88); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px; display: flex; gap: 2px;
+  backdrop-filter: blur(16px);
+}
+.vt {
+  padding: 5px 14px; border-radius: 16px; font-size: 10px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; color: var(--muted); letter-spacing: 0.06em;
+  font-family: 'Space Mono', monospace;
+}
+.vt.on { background: var(--cyan); color: var(--bg); }
+
+.extrude-pop {
+  background: rgba(6,16,26,0.92); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; backdrop-filter: blur(16px);
+  min-width: 180px; display: none;
+}
+.extrude-pop.show { display: block; }
+.ep-title {
+  font-family: 'Space Mono', monospace; font-size: 8px; color: var(--muted);
+  letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px;
+}
+.ep-opts { display: flex; flex-direction: column; gap: 4px; }
+.ep-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 6px; cursor: pointer;
+  font-size: 11px; transition: all 0.15s;
+}
+.ep-opt:hover { background: rgba(255,255,255,0.04); }
+.ep-opt.on { background: rgba(0,229,160,0.08); color: var(--cyan); }
+.ep-radio {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 1.5px solid var(--muted); flex-shrink: 0; position: relative;
+}
+.ep-opt.on .ep-radio { border-color: var(--cyan); }
+.ep-opt.on .ep-radio::after {
+  content: ''; position: absolute; inset: 2px;
+  border-radius: 50%; background: var(--cyan);
+}
+
+.map-zoom {
+  position: absolute; top: 50%; right: 16px; transform: translateY(-50%);
+  z-index: 400; display: flex; flex-direction: column;
+  background: rgba(6,16,26,0.88); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; backdrop-filter: blur(16px);
+}
+.mz-btn {
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; color: var(--muted); transition: all 0.15s;
+  font-weight: 300; user-select: none;
+}
+.mz-btn:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+.mz-btn + .mz-btn { border-top: 1px solid var(--border); }
+
+.anim-badge {
+  position: absolute; top: 58px; left: 50%; transform: translateX(-50%);
+  z-index: 400; pointer-events: none;
+  background: rgba(6,16,26,0.9); border: 1px solid rgba(0,229,160,0.4);
+  border-radius: 20px; padding: 6px 15px; backdrop-filter: blur(12px);
+  display: flex; align-items: center; gap: 7px;
+  font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--cyan);
+  opacity: 0; transition: opacity 0.3s;
+}
+.anim-badge.show { opacity: 1; }
+.anim-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--cyan); box-shadow: 0 0 8px var(--cyan);
+  animation: blink 0.6s ease-in-out infinite;
+}
+
+.replay-dock {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 410; min-width: 620px; max-width: calc(100% - 80px);
+  background: rgba(6,16,26,0.95); border: 1px solid var(--border);
+  border-radius: 14px; backdrop-filter: blur(20px);
+  padding: 14px 18px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+.rd-row1 { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.rd-play {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--cyan); color: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; font-size: 14px;
+  transition: all 0.2s; box-shadow: 0 0 20px rgba(0,229,160,0.4);
+}
+.rd-play:hover { transform: scale(1.05); }
+.rd-play.playing { background: var(--coral); box-shadow: 0 0 20px rgba(248,113,113,0.4); }
+.rd-info { flex: 1; min-width: 0; }
+.rd-title {
+  font-family: 'Space Mono', monospace; font-size: 8px; color: var(--muted);
+  letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 2px;
+}
+.rd-time {
+  font-family: 'Space Mono', monospace; font-size: 17px; font-weight: 700;
+  color: var(--text); letter-spacing: -0.01em;
+}
+.rd-time .sep { color: var(--muted); margin: 0 6px; font-weight: 400; }
+.rd-time .total { color: var(--muted); font-size: 13px; }
+.rd-status {
+  font-size: 11px; color: var(--muted); margin-top: 2px;
+  display: flex; align-items: center; gap: 7px;
+}
+.now-trip { color: var(--text); display: flex; align-items: center; gap: 6px; }
+.now-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.rd-speeds { display: flex; gap: 4px; flex-shrink: 0; }
+.rd-speed {
+  padding: 6px 10px; border-radius: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+.rd-speed.on { background: rgba(0,229,160,0.1); border-color: var(--cyan); color: var(--cyan); }
+
+.rd-scrub { height: 28px; position: relative; display: flex; align-items: center; }
+.rd-track {
+  position: relative; width: 100%; height: 8px;
+  background: var(--surface2); border-radius: 4px; overflow: visible;
+  cursor: pointer;
+}
+.rd-segment {
+  position: absolute; top: 0; bottom: 0;
+  border-right: 1px solid rgba(6,16,26,0.6);
+  transition: opacity 0.2s; cursor: pointer;
+}
+.rd-progress {
+  position: absolute; top: 0; bottom: 0; left: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 100%);
+  border-radius: 4px; pointer-events: none;
+  border-right: 1.5px solid #fff;
+  box-shadow: 2px 0 12px rgba(0,229,160,0.6);
+}
+.rd-thumb {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--cyan);
+  box-shadow: 0 0 12px var(--cyan); pointer-events: none;
+}
+.rd-hours {
+  display: flex; justify-content: space-between;
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  color: var(--muted); letter-spacing: 0.1em; margin-top: 6px;
+}
+
+.filter-summary {
+  position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+  z-index: 400; display: flex; gap: 6px;
+  pointer-events: none; opacity: 0; transition: opacity 0.2s;
+}
+.filter-summary.show { opacity: 1; pointer-events: auto; }
+.fs-chip {
+  background: rgba(6,16,26,0.92); border: 1px solid rgba(0,229,160,0.4);
+  backdrop-filter: blur(16px);
+  padding: 5px 11px; border-radius: 14px;
+  font-family: 'Space Mono', monospace; font-size: 9px;
+  letter-spacing: 0.08em; color: var(--cyan);
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+}
+.fs-chip:hover { background: rgba(0,229,160,0.1); }
+.fs-x { opacity: 0.7; font-size: 10px; }
+
+.vm {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.95);
+  box-shadow: 0 0 14px currentColor, 0 0 28px currentColor, 0 0 40px currentColor;
+}
+.em-wrap { position: relative; width: 16px; height: 16px; }
+.em-core {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.8);
+  position: absolute; top: 3px; left: 3px;
+}
+.em-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1.5px solid currentColor;
+  animation: ripple 2s ease-out infinite;
+}
+@keyframes ripple {
+  0% { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+.filters-panel {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 14px 16px;
+  z-index: 600;
+  transform: translateY(-8px);
+  opacity: 0; visibility: hidden;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.25s ease, visibility 0s linear 0.3s;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.filters-panel.open {
+  transform: translateY(0); opacity: 1; visibility: visible;
+  pointer-events: auto;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.25s ease, visibility 0s linear 0s;
+}
+.fp-title {
+  font-family: 'Space Mono', monospace; font-size: 9px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+}
+.fp-close { color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; }
+.fp-section { margin-bottom: 14px; }
+.fp-section:last-child { margin-bottom: 0; }
+.fp-label {
+  font-size: 10px; font-weight: 600; color: var(--text);
+  margin-bottom: 7px; display: flex; justify-content: space-between;
+}
+.fp-label .fp-val { font-family: 'Space Mono', monospace; color: var(--cyan); font-weight: 700; }
+.fp-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.fp-tag {
+  padding: 4px 9px; border-radius: 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+  font-size: 10px; cursor: pointer; transition: all 0.15s;
+}
+.fp-tag:hover { border-color: rgba(0,229,160,0.3); }
+.fp-tag.on { background: rgba(0,229,160,0.12); border-color: var(--cyan); color: var(--cyan); }
+
+.fp-range { position: relative; height: 32px; padding: 0 7px; }
+.fp-range-track {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  left: 7px; right: 7px; height: 4px;
+  background: var(--surface2); border-radius: 2px;
+}
+.fp-range-fill {
+  position: absolute; top: 0; bottom: 0;
+  background: var(--cyan); border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0,229,160,0.5);
+}
+.fp-range input[type=range] {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  left: 0; right: 0; width: 100%;
+  -webkit-appearance: none; background: transparent;
+  pointer-events: none; height: 14px;
+}
+.fp-range input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  pointer-events: auto;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--cyan);
+  box-shadow: 0 0 8px rgba(0,229,160,0.5); cursor: pointer;
+}
+.fp-range input[type=range]::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--cyan); cursor: pointer;
+}
+.fp-hours-marks {
+  display: flex; justify-content: space-between;
+  margin-top: 4px; font-family: 'Space Mono', monospace;
+  font-size: 8px; color: var(--muted); letter-spacing: 0.1em;
+}
+
+/* Mobile: hide sidebar, show bottom nav */
+@media (max-width: 640px) {
+  .sidebar { display: none; }
+  .map-area { width: 100%; }
+  .replay-dock { min-width: calc(100% - 32px); bottom: 80px; }
+  .mobile-nav {
+    display: flex !important;
+  }
+}
+.mobile-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; width: 100%; z-index: 600;
+  background: var(--bg); border-top: 1px solid var(--border);
+  padding: 8px 16px 16px; justify-content: space-around; align-items: center;
+}
+.mn-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  text-decoration: none; color: var(--muted);
+  font-size: 10px; font-weight: 500; padding: 6px 12px; border-radius: 10px;
+  transition: all 0.15s;
+}
+.mn-item.active {
+  background: linear-gradient(135deg, var(--cyan), #00c896);
+  color: var(--bg);
+}
+.mn-icon { font-size: 18px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="driver-header">
+    <div class="driver-avatar" id="driver-initials">YO</div>
+    <div>
+      <div class="driver-name" id="driver-name">Conductor</div>
+      <div class="driver-meta">YAGA · CDMX</div>
+    </div>
+    <div class="live-badge"><div class="live-dot"></div>Live</div>
+  </div>
+
+  <div class="day-tabs" id="day-tabs"></div>
+  <div class="day-summary" id="day-summary"></div>
+
+  <div class="filter-bar">
+    <div class="fb-btn" id="fb-filter-btn">⚲ Filtros</div>
+    <div class="fb-count" id="fb-count"></div>
+    <div class="fb-btn reset" id="fb-reset-btn" style="display:none">↻ Limpiar</div>
+
+    <div class="filters-panel" id="filters-panel">
+      <div class="fp-title">
+        Filtros avanzados
+        <span class="fp-close" id="fp-close">✕</span>
+      </div>
+      <div class="fp-section">
+        <div class="fp-label">Hora del día <span class="fp-val" id="fp-hour-val"></span></div>
+        <div class="fp-range">
+          <div class="fp-range-track">
+            <div class="fp-range-fill" id="fp-hour-fill"></div>
+          </div>
+          <input type="range" min="0" max="23" id="fp-hour-min"/>
+          <input type="range" min="0" max="23" id="fp-hour-max"/>
+        </div>
+        <div class="fp-hours-marks"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
+      </div>
+      <div class="fp-section">
+        <div class="fp-label">Tipo de viaje</div>
+        <div class="fp-tags" id="fp-types"></div>
+      </div>
+      <div class="fp-section">
+        <div class="fp-label">Zona</div>
+        <div class="fp-tags" id="fp-zones"></div>
+      </div>
+      <div class="fp-section">
+        <div class="fp-label">Tarifa mínima <span class="fp-val" id="fp-fare-val"></span></div>
+        <div class="fp-range">
+          <div class="fp-range-track">
+            <div class="fp-range-fill" id="fp-fare-fill"></div>
+          </div>
+          <input type="range" min="0" max="400" step="10" id="fp-fare-min"/>
+        </div>
+        <div class="fp-hours-marks"><span>$0</span><span>$100</span><span>$200</span><span>$300</span><span>$400</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trip-list" id="trip-list"></div>
+</div>
+
+<!-- MAP AREA -->
+<div class="map-area">
+  <div id="map"></div>
+
+  <svg id="extrude-svg" style="position:absolute;inset:0;pointer-events:none;z-index:380;width:100%;height:100%;display:none;"></svg>
+
+  <div class="map-title">
+    <div class="mt-label">YAGA · Jornadas históricas</div>
+    <div class="mt-city">Ciudad de México</div>
+  </div>
+
+  <div class="map-controls">
+    <div class="view-toggle">
+      <div class="vt on" id="btn-2d">2D</div>
+      <div class="vt" id="btn-3d">3D</div>
+    </div>
+    <div class="extrude-pop" id="extrude-pop">
+      <div class="ep-title">Altura por</div>
+      <div class="ep-opts" id="ep-opts"></div>
+    </div>
+    <div class="mc-group" id="mc-stats"></div>
+  </div>
+
+  <div class="anim-badge" id="anim-badge">
+    <div class="anim-dot"></div>Trazando ruta
+  </div>
+
+  <div class="filter-summary" id="filter-summary"></div>
+
+  <div class="map-zoom">
+    <div class="mz-btn" id="btn-zoom-in">+</div>
+    <div class="mz-btn" id="btn-zoom-out">−</div>
+  </div>
+
+  <div class="replay-dock">
+    <div class="rd-row1">
+      <div class="rd-play" id="rd-play">▶</div>
+      <div class="rd-info">
+        <div class="rd-title" id="rd-title">Reproducción de jornada</div>
+        <div class="rd-time" id="rd-time"></div>
+        <div class="rd-status" id="rd-status"></div>
+      </div>
+      <div class="rd-speeds" id="rd-speeds"></div>
+    </div>
+    <div class="rd-scrub" id="rd-scrub">
+      <div class="rd-track" id="rd-track">
+        <div id="rd-segments"></div>
+        <div class="rd-progress" id="rd-progress" style="width:0%"></div>
+        <div class="rd-thumb" id="rd-thumb" style="left:0%"></div>
+      </div>
+    </div>
+    <div class="rd-hours" id="rd-hours"></div>
+  </div>
+</div>
+
+<!-- Mobile nav -->
+<nav class="mobile-nav">
+  <a href="/index.html" class="mn-item"><span class="mn-icon">🧭</span>Jornada</a>
+  <a href="/index.html" class="mn-item"><span class="mn-icon">💳</span>Gastos</a>
+  <a href="/map-jornadas.html" class="mn-item active"><span class="mn-icon">🗺️</span>Mapa</a>
+  <a href="/index.html" class="mn-item"><span class="mn-icon">👤</span>Perfil</a>
+</nav>
+
+<script>
+'use strict';
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const TRIP_TYPES = ['ride', 'delivery', 'airport'];
+const ZONES = ['Centro','Polanco','Roma/Condesa','Sur','Norte','Poniente'];
+const TYPE_LABELS = { ride: 'Pasaje', delivery: 'Entrega', airport: 'Aeropuerto' };
+
+const DAYS = [
+  {
+    label:'Hoy', date:'29 Abr', km:28.4, viajes:5, ganancia:1110,
+    trips:[
+      { id:'t1', n:1, color:'#00e5a0', origin:'Roma Norte', dest:'Polanco',
+        time:'08:14', startMin:8*60+14, endMin:8*60+37, dur:'23 min', km:4.2, fare:180, type:'ride', zone:'Polanco', avgSpeed:38,
+        raw:[[19.4195,-99.1622],[19.4215,-99.1658],[19.4248,-99.1706],[19.4272,-99.1770],[19.4301,-99.1848],[19.4320,-99.1893],[19.4334,-99.1930]] },
+      { id:'t2', n:2, color:'#00b4d8', origin:'Polanco', dest:'Lomas Chapultepec',
+        time:'09:40', startMin:9*60+40, endMin:10*60+11, dur:'31 min', km:7.8, fare:290, type:'ride', zone:'Polanco', avgSpeed:45,
+        raw:[[19.4334,-99.1930],[19.4340,-99.1990],[19.4342,-99.2055],[19.4340,-99.2130],[19.4332,-99.2200]] },
+      { id:'t3', n:3, color:'#818cf8', origin:'Centro Histórico', dest:'Del Valle',
+        time:'11:20', startMin:11*60+20, endMin:11*60+52, dur:'32 min', km:5.9, fare:220, type:'delivery', zone:'Centro', avgSpeed:28,
+        raw:[[19.4326,-99.1332],[19.4278,-99.1392],[19.4215,-99.1490],[19.4150,-99.1560],[19.4070,-99.1600],[19.3960,-99.1640],[19.3907,-99.1657]] },
+      { id:'t4', n:4, color:'#f59e0b', origin:'Doctores', dest:'Iztacalco',
+        time:'13:05', startMin:13*60+5, endMin:13*60+38, dur:'33 min', km:6.3, fare:240, type:'ride', zone:'Centro', avgSpeed:32,
+        raw:[[19.4139,-99.1419],[19.4100,-99.1355],[19.4060,-99.1275],[19.4018,-99.1190],[19.3983,-99.1084]] },
+      { id:'t5', n:5, color:'#2dd4bf', origin:'Coyoacán', dest:'Insurgentes Sur',
+        time:'15:40', startMin:15*60+40, endMin:15*60+58, dur:'18 min', km:4.2, fare:180, type:'ride', zone:'Sur', avgSpeed:42,
+        raw:[[19.3467,-99.1617],[19.3530,-99.1620],[19.3610,-99.1642],[19.3710,-99.1660],[19.3810,-99.1672]] },
+    ]
+  },
+  {
+    label:'Ayer', date:'28 Abr', km:34.1, viajes:5, ganancia:1350,
+    trips:[
+      { id:'t6', n:1, color:'#00e5a0', origin:'Tacubaya', dest:'Nápoles',
+        time:'07:50', startMin:7*60+50, endMin:8*60+22, dur:'32 min', km:5.1, fare:195, type:'ride', zone:'Poniente', avgSpeed:30,
+        raw:[[19.4020,-99.1832],[19.4025,-99.1790],[19.4015,-99.1750],[19.4000,-99.1718],[19.3990,-99.1680]] },
+      { id:'t7', n:2, color:'#f59e0b', origin:'Nápoles', dest:'Narvarte Pte.',
+        time:'09:10', startMin:9*60+10, endMin:9*60+35, dur:'25 min', km:3.8, fare:165, type:'delivery', zone:'Centro', avgSpeed:25,
+        raw:[[19.3990,-99.1680],[19.3995,-99.1650],[19.4000,-99.1620],[19.4005,-99.1590]] },
+      { id:'t8', n:3, color:'#00b4d8', origin:'Condesa', dest:'Tlalpan',
+        time:'10:55', startMin:10*60+55, endMin:11*60+44, dur:'49 min', km:11.2, fare:380, type:'ride', zone:'Roma/Condesa', avgSpeed:48,
+        raw:[[19.4143,-99.1728],[19.4080,-99.1705],[19.3990,-99.1688],[19.3870,-99.1672],[19.3720,-99.1660],[19.3560,-99.1652],[19.3380,-99.1648],[19.2967,-99.1644]] },
+      { id:'t9', n:4, color:'#f87171', origin:'Insurgentes Sur', dest:'Pedregal',
+        time:'12:30', startMin:12*60+30, endMin:12*60+58, dur:'28 min', km:4.7, fare:185, type:'ride', zone:'Sur', avgSpeed:35,
+        raw:[[19.3810,-99.1672],[19.3700,-99.1710],[19.3560,-99.1760],[19.3420,-99.1820],[19.3217,-99.1869]] },
+      { id:'t10', n:5, color:'#818cf8', origin:'Benito Juárez', dest:'V. Carranza',
+        time:'14:20', startMin:14*60+20, endMin:15*60+5, dur:'45 min', km:9.3, fare:340, type:'airport', zone:'Centro', avgSpeed:40,
+        raw:[[19.4020,-99.1550],[19.4045,-99.1450],[19.4065,-99.1360],[19.4080,-99.1275],[19.4090,-99.1175],[19.4095,-99.1080]] },
+    ]
+  },
+  {
+    label:'Lun', date:'27 Abr', km:22.7, viajes:4, ganancia:980,
+    trips:[
+      { id:'t11', n:1, color:'#2dd4bf', origin:'Azcapotzalco', dest:'Cuauhtémoc',
+        time:'08:00', startMin:8*60, endMin:8*60+41, dur:'41 min', km:8.5, fare:310, type:'ride', zone:'Norte', avgSpeed:36,
+        raw:[[19.4864,-99.1800],[19.4720,-99.1760],[19.4600,-99.1700],[19.4480,-99.1620],[19.4380,-99.1540],[19.4280,-99.1500],[19.4180,-99.1480]] },
+      { id:'t12', n:2, color:'#00e5a0', origin:'Cuauhtémoc', dest:'Miguel Hidalgo',
+        time:'09:20', startMin:9*60+20, endMin:9*60+48, dur:'28 min', km:4.4, fare:175, type:'ride', zone:'Centro', avgSpeed:30,
+        raw:[[19.4180,-99.1480],[19.4215,-99.1540],[19.4265,-99.1622],[19.4300,-99.1720],[19.4340,-99.1830]] },
+      { id:'t13', n:3, color:'#f59e0b', origin:'Santa Fe', dest:'Álvaro Obregón',
+        time:'11:30', startMin:11*60+30, endMin:12*60+10, dur:'40 min', km:7.2, fare:270, type:'airport', zone:'Poniente', avgSpeed:50,
+        raw:[[19.3627,-99.2577],[19.3672,-99.2450],[19.3725,-99.2300],[19.3790,-99.2150],[19.3855,-99.1980],[19.3920,-99.1820],[19.3970,-99.1680],[19.4015,-99.1590]] },
+      { id:'t14', n:4, color:'#00b4d8', origin:'San Ángel', dest:'Coyoacán',
+        time:'14:00', startMin:14*60, endMin:14*60+24, dur:'24 min', km:2.6, fare:130, type:'delivery', zone:'Sur', avgSpeed:22,
+        raw:[[19.3517,-99.1900],[19.3490,-99.1825],[19.3476,-99.1740],[19.3467,-99.1617]] },
+    ]
+  },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let dayIdx = 0, selTrip = null, animating = false;
+let view3D = false, extrudeBy = 'fare';
+let replayOn = false, replayTime = 0, replaySpeed = 60;
+let filtersOpen = false;
+let fHourMin = 0, fHourMax = 23;
+let fTypes = [...TRIP_TYPES], fZones = [...ZONES], fFareMin = 0;
+
+// ── MAP STATE ─────────────────────────────────────────────────────────────────
+let lMap = null;
+const routeLayers = {};
+let animFrameId = null, vehicleMk = null, replayFrameId = null;
+let replayTickLast = 0, replayMinRef = 0, frameCount = 0;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function interpolate(wp, steps = 18) {
+  const out = [];
+  for (let i = 0; i < wp.length - 1; i++) {
+    for (let j = 0; j < steps; j++) {
+      const t = j / steps;
+      out.push([wp[i][0] + (wp[i+1][0]-wp[i][0])*t, wp[i][1] + (wp[i+1][1]-wp[i][1])*t]);
+    }
+  }
+  out.push(wp[wp.length-1]);
+  return out;
+}
+function routeBounds(path) {
+  const lats = path.map(p=>p[0]), lngs = path.map(p=>p[1]);
+  return [[Math.min(...lats)-0.005, Math.min(...lngs)-0.005],
+          [Math.max(...lats)+0.005, Math.max(...lngs)+0.005]];
+}
+function dayBounds(trips) {
+  const all = trips.flatMap(t=>t.raw);
+  if (!all.length) return [[19.35,-99.22],[19.48,-99.10]];
+  const lats = all.map(p=>p[0]), lngs = all.map(p=>p[1]);
+  return [[Math.min(...lats)-0.01, Math.min(...lngs)-0.01],
+          [Math.max(...lats)+0.01, Math.max(...lngs)+0.01]];
+}
+function buildGlowLine(map, latlngs, color, dim = false) {
+  const a = dim ? 0.07 : 1;
+  return [
+    L.polyline(latlngs, {weight:18,color,opacity:0.03*a,lineCap:'round',lineJoin:'round',interactive:false}).addTo(map),
+    L.polyline(latlngs, {weight:7, color,opacity:0.14*a,lineCap:'round',lineJoin:'round',interactive:false}).addTo(map),
+    L.polyline(latlngs, {weight:2.5,color,opacity:0.80*a,lineCap:'round',lineJoin:'round',interactive:false}).addTo(map),
+    L.polyline(latlngs, {weight:1, color:'#ffffff',opacity:0.55*a,lineCap:'round',lineJoin:'round',interactive:false}).addTo(map),
+  ];
+}
+function setGlowDim(layers, color, dim) {
+  const alphas = dim ? [0.015,0.05,0.12,0] : [0.03,0.14,0.80,0.55];
+  layers[0].setStyle({color,opacity:alphas[0]});
+  layers[1].setStyle({color,opacity:alphas[1]});
+  layers[2].setStyle({color,opacity:alphas[2]});
+  layers[3].setStyle({color:'#ffffff',opacity:alphas[3]});
+}
+function removeGlow(layers) { layers.forEach(l => l.remove()); }
+function makeMarker(latlng, color, isPulse) {
+  const html = isPulse
+    ? `<div class="em-wrap"><div class="em-core" style="background:${color}"></div><div class="em-ring" style="border-color:${color}"></div></div>`
+    : `<div style="width:8px;height:8px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.7);box-shadow:0 0 8px ${color}"></div>`;
+  return L.marker(latlng, {
+    icon: L.divIcon({html, className:'', iconSize:isPulse?[16,16]:[8,8], iconAnchor:isPulse?[8,8]:[4,4]}),
+    interactive: false,
+  });
+}
+function hexToRgb(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+function fmtClock(min) {
+  const h = Math.floor(min/60), m = Math.floor(min%60);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+// ── COMPUTED ──────────────────────────────────────────────────────────────────
+function getFiltered() {
+  return DAYS[dayIdx].trips.filter(t => {
+    if (Math.floor(t.startMin/60) < fHourMin || Math.floor(t.startMin/60) > fHourMax) return false;
+    if (!fTypes.includes(t.type)) return false;
+    if (!fZones.includes(t.zone)) return false;
+    if (t.fare < fFareMin) return false;
+    return true;
+  });
+}
+function getFilteredIds() { return new Set(getFiltered().map(t => t.id)); }
+function getReplayWindow() {
+  const f = getFiltered();
+  if (!f.length) return {start:0, end:0, total:0};
+  const start = Math.min(...f.map(t=>t.startMin));
+  const end   = Math.max(...f.map(t=>t.endMin));
+  return {start, end, total: end - start};
+}
+function isFiltersActive() {
+  return fHourMin!==0 || fHourMax!==23 ||
+         fTypes.length!==TRIP_TYPES.length ||
+         fZones.length!==ZONES.length || fFareMin!==0;
+}
+
+// ── MAP DRAWING ───────────────────────────────────────────────────────────────
+function clearRoutes() {
+  Object.values(routeLayers).forEach(r => {
+    removeGlow(r.glow); r.start.remove(); r.end.remove();
+  });
+  Object.keys(routeLayers).forEach(k => delete routeLayers[k]);
+  if (vehicleMk) { vehicleMk.remove(); vehicleMk = null; }
+}
+function drawDay(trips, selected) {
+  clearRoutes();
+  trips.forEach(trip => {
+    const path = interpolate(trip.raw);
+    const dim  = selected && selected.id !== trip.id;
+    const glow  = buildGlowLine(lMap, path, trip.color, dim);
+    const start = makeMarker(path[0], trip.color, false).addTo(lMap);
+    const end   = makeMarker(path[path.length-1], trip.color, !dim).addTo(lMap);
+    routeLayers[trip.id] = {glow, start, end, path, trip};
+  });
+}
+
+// ── ROUTE ANIMATION ───────────────────────────────────────────────────────────
+function animateRoute(trip) {
+  if (!lMap || !routeLayers[trip.id]) return;
+  const {glow, path} = routeLayers[trip.id];
+  glow.forEach(l => l.setLatLngs([path[0], path[0]]));
+  if (vehicleMk) vehicleMk.remove();
+  const vIcon = L.divIcon({
+    html: `<div class="vm" style="color:${trip.color};background:${trip.color}"></div>`,
+    className:'', iconSize:[14,14], iconAnchor:[7,7],
+  });
+  vehicleMk = L.marker(path[0], {icon:vIcon, interactive:false, zIndexOffset:1000}).addTo(lMap);
+  lMap.fitBounds(routeBounds(path), {padding:[60,60], animate:true, duration:0.7});
+  const n = path.length, start = performance.now(), dur = 1500 + n*2;
+  const tick = (now) => {
+    const t = Math.min((now - start) / dur, 1);
+    const e = 1 - Math.pow(1-t, 2.5);
+    const count = Math.max(2, Math.ceil(e * n));
+    glow.forEach(l => l.setLatLngs(path.slice(0, count)));
+    if (vehicleMk) vehicleMk.setLatLng(path[count-1]);
+    if (t < 1) { animFrameId = requestAnimationFrame(tick); }
+    else {
+      animating = false;
+      if (vehicleMk) { vehicleMk.remove(); vehicleMk = null; }
+      renderAnimBadge();
+    }
+  };
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  animFrameId = requestAnimationFrame(tick);
+}
+
+// ── REPLAY ────────────────────────────────────────────────────────────────────
+function stopReplay() {
+  replayOn = false;
+  if (replayFrameId) cancelAnimationFrame(replayFrameId);
+  if (vehicleMk) { vehicleMk.remove(); vehicleMk = null; }
+  drawDay(getFiltered(), null);
+  renderReplay();
+}
+function startReplay() {
+  const filtered = getFiltered();
+  if (!filtered.length) return;
+  selTrip = null;
+  replayOn = true;
+  drawDay(filtered, null);
+  Object.values(routeLayers).forEach(r => {
+    r.glow.forEach(l => l.setLatLngs([r.path[0], r.path[0]]));
+  });
+  const rw = getReplayWindow();
+  if (replayTime >= rw.total - 0.1) replayTime = 0;
+  replayMinRef = replayTime;
+  replayTickLast = performance.now();
+  lMap.fitBounds(dayBounds(filtered), {padding:[60,60], animate:true, duration:0.5});
+  renderReplay();
+  scheduleReplayTick();
+}
+function scheduleReplayTick() {
+  replayFrameId = requestAnimationFrame(replayTick);
+}
+function replayTick(now) {
+  if (!replayOn) return;
+  const dt = (now - replayTickLast) / 1000;
+  replayTickLast = now;
+  const rw = getReplayWindow();
+  replayMinRef = Math.min(replayMinRef + dt * (replaySpeed / 60), rw.total);
+  updateReplayPositions(replayMinRef);
+  frameCount++;
+  if (frameCount % 3 === 0) {
+    replayTime = replayMinRef;
+    renderReplayProgress();
+  }
+  if (replayMinRef >= rw.total) {
+    replayOn = false;
+    if (vehicleMk) { vehicleMk.remove(); vehicleMk = null; }
+    replayTime = rw.total;
+    renderReplay();
+    return;
+  }
+  scheduleReplayTick();
+}
+function updateReplayPositions(replayMin) {
+  const rw = getReplayWindow();
+  const absMin = rw.start + replayMin;
+  const filtered = getFiltered();
+  let activeTrip = null;
+  filtered.forEach(trip => {
+    const r = routeLayers[trip.id];
+    if (!r) return;
+    const {glow, path} = r;
+    if (absMin < trip.startMin) {
+      glow.forEach(l => l.setLatLngs([path[0], path[0]]));
+    } else if (absMin >= trip.endMin) {
+      glow.forEach(l => l.setLatLngs(path));
+    } else {
+      const t = (absMin - trip.startMin) / (trip.endMin - trip.startMin);
+      const count = Math.max(2, Math.ceil(t * path.length));
+      glow.forEach(l => l.setLatLngs(path.slice(0, count)));
+      activeTrip = {trip, latlng: path[count-1]};
+    }
+  });
+  if (activeTrip) {
+    if (!vehicleMk) {
+      const vIcon = L.divIcon({
+        html: `<div class="vm" style="color:${activeTrip.trip.color};background:${activeTrip.trip.color}"></div>`,
+        className:'', iconSize:[14,14], iconAnchor:[7,7],
+      });
+      vehicleMk = L.marker(activeTrip.latlng, {icon:vIcon, interactive:false, zIndexOffset:1000}).addTo(lMap);
+    } else {
+      vehicleMk.setLatLng(activeTrip.latlng);
+    }
+  } else if (vehicleMk) {
+    vehicleMk.remove(); vehicleMk = null;
+  }
+}
+
+// ── 3D EXTRUSION ──────────────────────────────────────────────────────────────
+function renderExtrudeBars() {
+  const svg = document.getElementById('extrude-svg');
+  if (!view3D || !lMap) { svg.style.display = 'none'; svg.innerHTML = ''; return; }
+  svg.style.display = '';
+  const filtered = getFiltered();
+  const bars = filtered.map(trip => {
+    const mid = trip.raw[Math.floor(trip.raw.length/2)];
+    const pt  = lMap.latLngToContainerPoint(mid);
+    let val;
+    if (extrudeBy === 'fare')     val = trip.fare;
+    else if (extrudeBy === 'speed') val = trip.avgSpeed * 4;
+    else                            val = (trip.endMin - trip.startMin) * 3;
+    return {id:trip.id, x:pt.x, y:pt.y, height:Math.min(220, Math.max(20, val * 0.55)), color:trip.color, trip};
+  });
+  let html = '';
+  bars.forEach(b => {
+    const [r,g,bl] = hexToRgb(b.color);
+    const label = extrudeBy==='fare' ? `$${b.trip.fare}` :
+                  extrudeBy==='speed' ? `${b.trip.avgSpeed}km/h` :
+                  `${b.trip.endMin-b.trip.startMin}min`;
+    html += `
+      <defs>
+        <linearGradient id="grad-${b.id}" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(${r},${g},${bl},0.95)"/>
+          <stop offset="100%" stop-color="rgba(${r},${g},${bl},0.25)"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="${b.x}" cy="${b.y+3}" rx="10" ry="3" fill="#000" opacity="0.5"/>
+      <rect x="${b.x-5}" y="${b.y-b.height}" width="10" height="${b.height}"
+        fill="url(#grad-${b.id})" stroke="${b.color}" stroke-width="0.6"/>
+      <circle cx="${b.x}" cy="${b.y-b.height}" r="5" fill="${b.color}" opacity="0.85"/>
+      <circle cx="${b.x}" cy="${b.y-b.height}" r="9" fill="${b.color}" opacity="0.25"/>
+      <text x="${b.x+10}" y="${b.y-b.height+4}" font-family="Space Mono" font-size="10" font-weight="700" fill="${b.color}">${label}</text>
+    `;
+  });
+  svg.innerHTML = html;
+}
+
+// ── RENDER FUNCTIONS ──────────────────────────────────────────────────────────
+function renderDayTabs() {
+  const day = DAYS[dayIdx];
+  document.getElementById('day-tabs').innerHTML = DAYS.map((d,i) =>
+    `<div class="day-tab${dayIdx===i?' active':''}" data-day="${i}">
+      ${d.label}<span class="sub">${d.date}</span>
+    </div>`
+  ).join('');
+}
+function renderDaySummary() {
+  const filtered = getFiltered();
+  const viajes = filtered.length;
+  const km = filtered.reduce((s,t)=>s+t.km,0).toFixed(1);
+  const mxn = filtered.reduce((s,t)=>s+t.fare,0);
+  document.getElementById('day-summary').innerHTML = `
+    <div class="ds-cell"><div class="ds-val">${viajes}</div><div class="ds-lbl">Viajes</div></div>
+    <div class="ds-cell"><div class="ds-val">${km}</div><div class="ds-lbl">km</div></div>
+    <div class="ds-cell"><div class="ds-val">$${mxn}</div><div class="ds-lbl">MXN</div></div>
+  `;
+}
+function renderFilterBar() {
+  const filtered = getFiltered();
+  const day = DAYS[dayIdx];
+  const active = isFiltersActive();
+  const btn = document.getElementById('fb-filter-btn');
+  btn.className = `fb-btn${active?' active':''}`;
+  const chips = [
+    fHourMin!==0||fHourMax!==23,
+    fTypes.length!==TRIP_TYPES.length,
+    fZones.length!==ZONES.length,
+    fFareMin!==0,
+  ].filter(Boolean).length;
+  btn.textContent = active ? `⚲ Filtros ·${chips}` : '⚲ Filtros';
+  document.getElementById('fb-count').textContent = `${filtered.length}/${day.trips.length}`;
+  document.getElementById('fb-reset-btn').style.display = active ? '' : 'none';
+  document.getElementById('filters-panel').className = `filters-panel${filtersOpen?' open':''}`;
+}
+function renderFilterPanel() {
+  // hour range
+  document.getElementById('fp-hour-val').textContent =
+    `${String(fHourMin).padStart(2,'0')}:00 — ${String(fHourMax).padStart(2,'0')}:59`;
+  document.getElementById('fp-hour-min').value = fHourMin;
+  document.getElementById('fp-hour-max').value = fHourMax;
+  const hFill = document.getElementById('fp-hour-fill');
+  hFill.style.left = `${(fHourMin/23)*100}%`;
+  hFill.style.right = `${100-(fHourMax/23)*100}%`;
+
+  // fare range
+  document.getElementById('fp-fare-val').textContent = `$${fFareMin}`;
+  document.getElementById('fp-fare-min').value = fFareMin;
+  const fFill = document.getElementById('fp-fare-fill');
+  fFill.style.left = '0%';
+  fFill.style.right = `${100-(fFareMin/400)*100}%`;
+
+  // type tags
+  document.getElementById('fp-types').innerHTML = TRIP_TYPES.map(t =>
+    `<div class="fp-tag${fTypes.includes(t)?' on':''}" data-type="${t}">${TYPE_LABELS[t]}</div>`
+  ).join('');
+
+  // zone tags
+  document.getElementById('fp-zones').innerHTML = ZONES.map(z =>
+    `<div class="fp-tag${fZones.includes(z)?' on':''}" data-zone="${z}">${z}</div>`
+  ).join('');
+}
+function renderTripList() {
+  const filtered = getFiltered();
+  const filteredIds = getFilteredIds();
+  const day = DAYS[dayIdx];
+  document.getElementById('trip-list').innerHTML = day.trips.map(t => {
+    const isSel = selTrip && selTrip.id === t.id;
+    const isDim = !filteredIds.has(t.id);
+    return `
+      <div class="trip-card${isSel?' sel':''}${isDim?' dim':''}" data-trip="${t.id}">
+        <div class="tc-accent" style="background:${t.color}"></div>
+        <div class="tc-n">
+          <div class="tc-dot" style="background:${t.color};box-shadow:0 0 5px ${t.color}"></div>
+          Viaje ${t.n} · ${t.time}
+          <div class="tc-tag">${TYPE_LABELS[t.type]}</div>
+        </div>
+        <div class="tc-route">${t.origin} <span class="tc-dest">→ ${t.dest}</span></div>
+        <div class="tc-chips">
+          <span class="chip">${t.dur}</span>
+          <span class="chip">${t.km} km</span>
+          <span class="chip hi">$${t.fare}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+function renderMcStats() {
+  const filtered = getFiltered();
+  const km = filtered.reduce((s,t)=>s+t.km,0).toFixed(1);
+  const fare = filtered.reduce((s,t)=>s+t.fare,0);
+  document.getElementById('mc-stats').innerHTML = `
+    <div class="mc-btn"><span class="mc-icon">⬡</span>Viajes<span class="mc-val">${filtered.length}</span></div>
+    <div class="mc-btn"><span class="mc-icon">◎</span>Distancia<span class="mc-val">${km}km</span></div>
+    <div class="mc-btn"><span class="mc-icon">▲</span>Ganancia<span class="mc-val">$${fare}</span></div>
+  `;
+}
+function renderExtrudePop() {
+  const pop = document.getElementById('extrude-pop');
+  pop.className = `extrude-pop${view3D?' show':''}`;
+  document.getElementById('ep-opts').innerHTML = [
+    {key:'fare', label:'Tarifa', unit:'$MXN'},
+    {key:'speed', label:'Vel. promedio', unit:'km/h'},
+    {key:'duration', label:'Duración', unit:'min'},
+  ].map(o => `
+    <div class="ep-opt${extrudeBy===o.key?' on':''}" data-extrude="${o.key}">
+      <div class="ep-radio"></div>${o.label}
+      <span style="margin-left:auto;font-size:9px;opacity:0.6">${o.unit}</span>
+    </div>
+  `).join('');
+}
+function renderView3DToggle() {
+  document.getElementById('btn-2d').className = `vt${!view3D?' on':''}`;
+  document.getElementById('btn-3d').className = `vt${view3D?' on':''}`;
+  const mapEl = document.getElementById('map');
+  if (view3D) {
+    mapEl.style.transform = 'perspective(1400px) rotateX(45deg)';
+    mapEl.style.transformOrigin = 'center 65%';
+    mapEl.style.transition = 'transform 0.6s cubic-bezier(0.16,1,0.3,1)';
+  } else {
+    mapEl.style.transform = 'none';
+  }
+  setTimeout(() => lMap && lMap.invalidateSize(), 650);
+}
+function renderAnimBadge() {
+  document.getElementById('anim-badge').className = `anim-badge${animating?' show':''}`;
+}
+function renderFilterSummary() {
+  const active = isFiltersActive();
+  const el = document.getElementById('filter-summary');
+  el.className = `filter-summary${active?' show':''}`;
+  let chips = '';
+  if (fHourMin!==0||fHourMax!==23) {
+    chips += `<div class="fs-chip" data-clear="hour">
+      ${String(fHourMin).padStart(2,'0')}:00–${String(fHourMax).padStart(2,'0')}:59
+      <span class="fs-x">✕</span>
+    </div>`;
+  }
+  if (fTypes.length!==TRIP_TYPES.length) {
+    chips += `<div class="fs-chip" data-clear="types">
+      ${fTypes.map(t=>TYPE_LABELS[t]).join(' · ')} <span class="fs-x">✕</span>
+    </div>`;
+  }
+  if (fZones.length!==ZONES.length) {
+    chips += `<div class="fs-chip" data-clear="zones">
+      ${fZones.length} ${fZones.length===1?'zona':'zonas'} <span class="fs-x">✕</span>
+    </div>`;
+  }
+  if (fFareMin>0) {
+    chips += `<div class="fs-chip" data-clear="fare">≥ $${fFareMin} <span class="fs-x">✕</span></div>`;
+  }
+  el.innerHTML = chips;
+}
+function renderReplay() {
+  const rw = getReplayWindow();
+  const rt = replayTime;
+  const pct = rw.total > 0 ? (rt/rw.total)*100 : 0;
+
+  // play button
+  const playBtn = document.getElementById('rd-play');
+  playBtn.className = `rd-play${replayOn?' playing':''}`;
+  playBtn.textContent = replayOn ? '❚❚' : '▶';
+
+  // title
+  document.getElementById('rd-title').textContent =
+    `Reproducción de jornada · ${DAYS[dayIdx].date}`;
+
+  // time
+  const clock = fmtClock(rw.start + rt);
+  const endClock = fmtClock(rw.end);
+  document.getElementById('rd-time').innerHTML =
+    `${clock}<span class="sep">/</span><span class="total">${endClock}</span>`;
+
+  // status
+  const absMin = rw.start + rt;
+  const filtered = getFiltered();
+  const curTrip = filtered.find(t => absMin >= t.startMin && absMin < t.endMin);
+  let statusHtml = '';
+  if (curTrip) {
+    statusHtml = `<span class="now-trip">
+      <span class="now-dot" style="background:${curTrip.color};box-shadow:0 0 6px ${curTrip.color}"></span>
+      Viaje ${curTrip.n} · ${curTrip.origin} → ${curTrip.dest}
+    </span>`;
+  } else {
+    statusHtml = `<span>${replayOn?'Entre viajes…':'Pausado'}</span>`;
+  }
+  document.getElementById('rd-status').innerHTML = statusHtml;
+
+  // speeds
+  document.getElementById('rd-speeds').innerHTML = [30,60,120,300].map(s =>
+    `<div class="rd-speed${replaySpeed===s?' on':''}" data-speed="${s}">${s}×</div>`
+  ).join('');
+
+  // segments
+  const filtered2 = getFiltered();
+  let segs = '';
+  if (rw.total > 0) {
+    filtered2.forEach(t => {
+      const left = ((t.startMin-rw.start)/rw.total)*100;
+      const width = ((t.endMin-t.startMin)/rw.total)*100;
+      segs += `<div class="rd-segment"
+        style="left:${left}%;width:${width}%;background:linear-gradient(180deg,${t.color}cc,${t.color}66);box-shadow:0 0 6px ${t.color}88"
+        title="Viaje ${t.n}: ${t.origin} → ${t.dest}"></div>`;
+    });
+  }
+  document.getElementById('rd-segments').innerHTML = segs;
+
+  // progress + thumb
+  renderReplayProgress();
+
+  // hours
+  if (rw.total > 0) {
+    document.getElementById('rd-hours').innerHTML = `
+      <span>${fmtClock(rw.start)}</span>
+      <span>${fmtClock(rw.start + rw.total*0.25)}</span>
+      <span>${fmtClock(rw.start + rw.total*0.5)}</span>
+      <span>${fmtClock(rw.start + rw.total*0.75)}</span>
+      <span>${fmtClock(rw.end)}</span>
+    `;
+  }
+}
+function renderReplayProgress() {
+  const rw = getReplayWindow();
+  const pct = rw.total > 0 ? (replayTime/rw.total)*100 : 0;
+  document.getElementById('rd-progress').style.width = `${pct}%`;
+  document.getElementById('rd-thumb').style.left = `${pct}%`;
+}
+
+function renderAll() {
+  renderDayTabs();
+  renderDaySummary();
+  renderFilterBar();
+  renderFilterPanel();
+  renderTripList();
+  renderMcStats();
+  renderExtrudePop();
+  renderView3DToggle();
+  renderAnimBadge();
+  renderFilterSummary();
+  renderReplay();
+}
+
+// ── TRIP SELECTION ────────────────────────────────────────────────────────────
+function handleSelect(trip) {
+  if (replayOn) stopReplay();
+  if (!lMap) return;
+  const filtered = getFiltered();
+  if (selTrip && selTrip.id === trip.id) {
+    selTrip = null;
+    drawDay(filtered, null);
+    lMap.fitBounds(dayBounds(filtered), {padding:[60,60], animate:true, duration:0.6});
+    renderTripList();
+    return;
+  }
+  selTrip = trip;
+  animating = true;
+  filtered.forEach(t => {
+    const r = routeLayers[t.id];
+    if (!r) return;
+    setGlowDim(r.glow, t.color, t.id !== trip.id);
+  });
+  animateRoute(trip);
+  renderTripList();
+  renderAnimBadge();
+}
+
+// ── EVENTS ────────────────────────────────────────────────────────────────────
+function bindEvents() {
+  // Day tabs
+  document.getElementById('day-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('[data-day]');
+    if (!tab) return;
+    dayIdx = +tab.dataset.day;
+    selTrip = null;
+    replayTime = 0;
+    if (replayOn) stopReplay();
+    renderAll();
+    const filtered = getFiltered();
+    drawDay(filtered, null);
+    if (filtered.length) lMap.fitBounds(dayBounds(filtered), {padding:[60,60], animate:true, duration:0.6});
+  });
+
+  // Filter btn
+  document.getElementById('fb-filter-btn').addEventListener('click', () => {
+    filtersOpen = !filtersOpen;
+    renderFilterBar();
+  });
+  document.getElementById('fp-close').addEventListener('click', () => {
+    filtersOpen = false; renderFilterBar();
+  });
+  document.getElementById('fb-reset-btn').addEventListener('click', () => {
+    fHourMin=0; fHourMax=23; fTypes=[...TRIP_TYPES]; fZones=[...ZONES]; fFareMin=0;
+    onFilterChange();
+  });
+
+  // Filter panel: hour range
+  document.getElementById('fp-hour-min').addEventListener('input', e => {
+    fHourMin = Math.min(+e.target.value, fHourMax); onFilterChange();
+  });
+  document.getElementById('fp-hour-max').addEventListener('input', e => {
+    fHourMax = Math.max(+e.target.value, fHourMin); onFilterChange();
+  });
+
+  // Filter panel: fare range
+  document.getElementById('fp-fare-min').addEventListener('input', e => {
+    fFareMin = +e.target.value; onFilterChange();
+  });
+
+  // Filter panel: type/zone tags (delegated)
+  document.getElementById('fp-types').addEventListener('click', e => {
+    const tag = e.target.closest('[data-type]');
+    if (!tag) return;
+    const t = tag.dataset.type;
+    if (fTypes.includes(t)) fTypes = fTypes.filter(x=>x!==t);
+    else fTypes = [...fTypes, t];
+    onFilterChange();
+  });
+  document.getElementById('fp-zones').addEventListener('click', e => {
+    const tag = e.target.closest('[data-zone]');
+    if (!tag) return;
+    const z = tag.dataset.zone;
+    if (fZones.includes(z)) fZones = fZones.filter(x=>x!==z);
+    else fZones = [...fZones, z];
+    onFilterChange();
+  });
+
+  // Trip list
+  document.getElementById('trip-list').addEventListener('click', e => {
+    const card = e.target.closest('[data-trip]');
+    if (!card) return;
+    const id = card.dataset.trip;
+    if (card.classList.contains('dim')) return;
+    const trip = DAYS[dayIdx].trips.find(t=>t.id===id);
+    if (trip) handleSelect(trip);
+  });
+
+  // 2D/3D toggle
+  document.getElementById('btn-2d').addEventListener('click', () => {
+    view3D = false; renderView3DToggle(); renderExtrudePop(); renderExtrudeBars();
+  });
+  document.getElementById('btn-3d').addEventListener('click', () => {
+    view3D = true; renderView3DToggle(); renderExtrudePop(); renderExtrudeBars();
+  });
+
+  // Extrude options (delegated)
+  document.getElementById('ep-opts').addEventListener('click', e => {
+    const opt = e.target.closest('[data-extrude]');
+    if (!opt) return;
+    extrudeBy = opt.dataset.extrude;
+    renderExtrudePop(); renderExtrudeBars();
+  });
+
+  // Zoom
+  document.getElementById('btn-zoom-in').addEventListener('click', () => lMap && lMap.zoomIn());
+  document.getElementById('btn-zoom-out').addEventListener('click', () => lMap && lMap.zoomOut());
+
+  // Replay play button
+  document.getElementById('rd-play').addEventListener('click', () => {
+    if (replayOn) {
+      replayOn = false;
+      if (replayFrameId) cancelAnimationFrame(replayFrameId);
+      renderReplay();
+    } else {
+      startReplay();
+    }
+  });
+
+  // Replay speed buttons (delegated)
+  document.getElementById('rd-speeds').addEventListener('click', e => {
+    const btn = e.target.closest('[data-speed]');
+    if (!btn) return;
+    replaySpeed = +btn.dataset.speed;
+    renderReplay();
+  });
+
+  // Scrub bar
+  document.getElementById('rd-track').addEventListener('click', e => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const rw = getReplayWindow();
+    replayTime = x * rw.total;
+    replayMinRef = replayTime;
+    updateReplayPositions(replayMinRef);
+    renderReplayProgress();
+    renderReplay();
+  });
+
+  // Active filter chips (delegated)
+  document.getElementById('filter-summary').addEventListener('click', e => {
+    const chip = e.target.closest('[data-clear]');
+    if (!chip) return;
+    const key = chip.dataset.clear;
+    if (key==='hour') { fHourMin=0; fHourMax=23; }
+    else if (key==='types') fTypes=[...TRIP_TYPES];
+    else if (key==='zones') fZones=[...ZONES];
+    else if (key==='fare') fFareMin=0;
+    onFilterChange();
+  });
+
+  // Map move/zoom → refresh extrusion bars
+  // (lMap events bound after init)
+}
+
+function onFilterChange() {
+  const filtered = getFiltered();
+  const filteredIds = getFilteredIds();
+  // Deselect if filtered out
+  if (selTrip && !filteredIds.has(selTrip.id)) selTrip = null;
+  renderFilterBar();
+  renderFilterPanel();
+  renderTripList();
+  renderDaySummary();
+  renderMcStats();
+  renderFilterSummary();
+  renderReplay();
+  drawDay(filtered, selTrip);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  // Try to get driver name from JWT (token in memory)
+  const token = window._authToken || null;
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const email = payload.email || '';
+      const name = email.split('@')[0] || 'Conductor';
+      document.getElementById('driver-name').textContent = name;
+      document.getElementById('driver-initials').textContent =
+        name.slice(0,2).toUpperCase();
+    } catch {}
+  }
+
+  // Init Leaflet
+  lMap = L.map(document.getElementById('map'), {
+    center: [19.41, -99.16], zoom: 12,
+    zoomControl: false, attributionControl: false,
+    preferCanvas: true,
+  });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19,
+  }).addTo(lMap);
+  L.control.attribution({position:'bottomright', prefix:'© OpenStreetMap © CARTO'}).addTo(lMap);
+
+  // Map events → refresh extrusion bars
+  lMap.on('move zoom', () => { if (view3D) renderExtrudeBars(); });
+
+  // Initial render
+  renderAll();
+
+  // Draw initial routes
+  const filtered = getFiltered();
+  drawDay(filtered, null);
+  if (filtered.length) lMap.fitBounds(dayBounds(filtered), {padding:[60,60]});
+
+  // Bind all events
+  bindEvents();
+});
+</script>
+</body>
+</html>

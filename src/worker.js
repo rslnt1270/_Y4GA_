@@ -45,7 +45,7 @@ export default {
         url.pathname.startsWith('/poleana/') ||
         url.pathname === '/poleana' ||
         url.pathname === '/health') {
-      const backendUrl = new URL(url.pathname + url.search, 'http://ec2-3-19-35-76.us-east-2.compute.amazonaws.com');
+      const backendUrl = new URL(url.pathname + url.search, BACKEND_ORIGIN);
 
       // WebSocket upgrade
       if (request.headers.get('Upgrade') === 'websocket') {

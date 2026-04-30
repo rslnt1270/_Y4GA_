@@ -405,10 +405,6 @@
       margin-bottom: 8px;
       transition: background .2s;
     }
-    .analitica-header {
-      background: var(--surface, #1a2234);
-      border-bottom: 1px solid var(--border, #1e2d45);
-    }
     .section-title {
       font-size: .5rem;
       text-transform: uppercase;
@@ -1042,6 +1038,84 @@
       font-family: monospace;
     }
 
+    /* ── MAPA: switcher interno Histórico / GPS 3D ── */
+    .mapa-mode-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .mapa-mode-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .5px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      transition: all .18s;
+    }
+    .mapa-mode-btn.active {
+      background: var(--accent);
+      color: #0a1220;
+      border-color: var(--accent);
+    }
+
+    /* ── MAPA: contenedor GPS 3D (oculto por defecto) ── */
+    #mapaGps3d {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      min-height: 0;
+    }
+    #mapaGps3d.active { display: flex; }
+    .gps3d-panel {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .gps3d-panel select {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-size: .82rem;
+    }
+    .gps3d-panel button {
+      padding: 7px 16px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #0a1220;
+      font-weight: 700;
+      border: none;
+      font-size: .82rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #mapLibreContainer {
+      flex: 1;
+      position: relative;
+      background: #0a1220;
+      min-height: 0;
+    }
+    #deckCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
     /* ── IMPORT FAB ── */
     .mapa-fab {
       position: absolute;
@@ -1486,7 +1560,6 @@
     <div class="tab active" onclick="switchTab('dashboard')">🚕 Jornada</div>
     <div class="tab" onclick="switchTab('vehiculo')">🔧 Vehículo</div>
     <div class="tab" onclick="switchTab('mapa')">🗺️ Mapa</div>
-    <div class="tab" onclick="switchTab('analitica')">📊 Analítica</div>
   </div>
 
   <!-- SCREEN: DASHBOARD -->
@@ -1660,80 +1733,91 @@
 
   </div><!-- /screen-vehiculo -->
 
-  <!-- SCREEN: MAPA -->
+  <!-- SCREEN: MAPA (Histórico + GPS 3D unificados) -->
   <div class="screen" id="screen-mapa">
 
-    <!-- Stats bar -->
-    <div class="mapa-stats" id="mapaStats" style="display:none">
-      <div class="mapa-stat">
-        <span class="ms-label">Viajes mapeados</span>
-        <span class="ms-value" id="ms-total">—</span>
-      </div>
-      <div class="mapa-stat">
-        <span class="ms-label">Ingreso total</span>
-        <span class="ms-value" id="ms-ingreso">—</span>
-      </div>
-      <div class="mapa-stat">
-        <span class="ms-label">Promedio / viaje</span>
-        <span class="ms-value" id="ms-promedio">—</span>
-      </div>
-      <div class="mapa-stat">
-        <span class="ms-label">Periodo</span>
-        <span class="ms-value" id="ms-periodo" style="font-size:.75rem">—</span>
-      </div>
+    <!-- Switcher interno: Histórico / GPS 3D -->
+    <div class="mapa-mode-bar">
+      <button class="mapa-mode-btn active" id="modeHistorico" onclick="setMapaMode('historico')">⬡ Histórico</button>
+      <button class="mapa-mode-btn" id="modeGps3d" onclick="setMapaMode('gps3d')">◉ GPS 3D</button>
     </div>
 
-    <!-- Leyenda de colores -->
-    <div class="mapa-leyenda" id="mapaLeyenda" style="display:none">
-      <span class="mapa-leyenda-label">Monto:</span>
-      <div class="ley-item"><div class="ley-dot" style="background:#1a7a4a"></div>$200+</div>
-      <div class="ley-item"><div class="ley-dot" style="background:#22a55a"></div>$130-199</div>
-      <div class="ley-item"><div class="ley-dot" style="background:#f5a623"></div>$90-129</div>
-      <div class="ley-item"><div class="ley-dot" style="background:#e05555"></div>&lt;$90</div>
-    </div>
+    <!-- ── MODO HISTÓRICO ── -->
+    <div id="mapaHistorico" style="flex:1;display:flex;flex-direction:column;min-height:0">
 
-    <!-- Mapa Leaflet -->
-    <div id="mapaLeaflet"></div>
+      <!-- Stats bar -->
+      <div class="mapa-stats" id="mapaStats" style="display:none">
+        <div class="mapa-stat">
+          <span class="ms-label">Viajes mapeados</span>
+          <span class="ms-value" id="ms-total">—</span>
+        </div>
+        <div class="mapa-stat">
+          <span class="ms-label">Ingreso total</span>
+          <span class="ms-value" id="ms-ingreso">—</span>
+        </div>
+        <div class="mapa-stat">
+          <span class="ms-label">Promedio / viaje</span>
+          <span class="ms-value" id="ms-promedio">—</span>
+        </div>
+        <div class="mapa-stat">
+          <span class="ms-label">Periodo</span>
+          <span class="ms-value" id="ms-periodo" style="font-size:.75rem">—</span>
+        </div>
+      </div>
 
-    <!-- Estado vacío -->
-    <div class="mapa-empty" id="mapaEmpty" style="display:none">
-      <div class="icon">🗺️</div>
-      <div class="msg">Sin datos históricos importados.<br>Importa tu historial de Uber o DiDi para visualizar tus puntos de partida.</div>
-      <button class="import-btn" style="max-width:220px;margin-top:8px" onclick="abrirImport()">+ Importar historial</button>
-    </div>
+      <!-- Leyenda de colores -->
+      <div class="mapa-leyenda" id="mapaLeyenda" style="display:none">
+        <span class="mapa-leyenda-label">Monto:</span>
+        <div class="ley-item"><div class="ley-dot" style="background:#1a7a4a"></div>$200+</div>
+        <div class="ley-item"><div class="ley-dot" style="background:#22a55a"></div>$130-199</div>
+        <div class="ley-item"><div class="ley-dot" style="background:#f5a623"></div>$90-129</div>
+        <div class="ley-item"><div class="ley-dot" style="background:#e05555"></div>&lt;$90</div>
+      </div>
 
-    <!-- Loading -->
-    <div class="mapa-empty" id="mapaCargando">
-      <div class="icon">⏳</div>
-      <div class="msg">Cargando mapa…</div>
-    </div>
+      <!-- Mapa Leaflet -->
+      <div id="mapaLeaflet" style="flex:1;min-height:0"></div>
 
-    <!-- FAB importar (visible cuando hay datos) -->
-    <button class="mapa-fab" id="mapaFab" style="display:none" onclick="abrirImport()">+ Importar</button>
+      <!-- Estado vacío -->
+      <div class="mapa-empty" id="mapaEmpty" style="display:none">
+        <div class="icon">🗺️</div>
+        <div class="msg">Sin datos históricos importados.<br>Importa tu historial de Uber o DiDi para visualizar tus puntos de partida.</div>
+        <button class="import-btn" style="max-width:220px;margin-top:8px" onclick="abrirImport()">+ Importar historial</button>
+      </div>
 
-  </div><!-- /screen-mapa -->
+      <!-- Loading -->
+      <div class="mapa-empty" id="mapaCargando">
+        <div class="icon">⏳</div>
+        <div class="msg">Cargando mapa…</div>
+      </div>
 
-  <!-- SCREEN: ANALÍTICA 3D -->
-  <div class="screen" id="screen-analitica">
-    <div class="analitica-header">
-      <div class="section-title" style="padding:12px 12px 4px">Analítica de Rutas</div>
-      <div style="padding:0 12px 12px">
-        <select id="selectJornada" style="width:100%;padding:8px;border-radius:8px;background:var(--surface,#1a2234);color:var(--text,#e0e6f0);border:1px solid #2a3550;font-size:.9rem;margin-bottom:8px">
+      <!-- FAB importar (visible cuando hay datos) -->
+      <button class="mapa-fab" id="mapaFab" style="display:none" onclick="abrirImport()">+ Importar</button>
+
+    </div><!-- /mapaHistorico -->
+
+    <!-- ── MODO GPS 3D ── -->
+    <div id="mapaGps3d">
+
+      <!-- Panel selector de jornada -->
+      <div class="gps3d-panel">
+        <select id="selectJornada">
           <option value="">Selecciona una jornada…</option>
         </select>
-        <button onclick="cargarAnalisis3D()" style="width:100%;padding:12px;border-radius:8px;background:var(--accent,#00e5ff);color:#0a1220;font-weight:700;border:none;font-size:.95rem;cursor:pointer">
-          Cargar vista 3D
-        </button>
+        <button onclick="cargarAnalisis3D()">Cargar 3D</button>
       </div>
-    </div>
-    <div id="mapLibreContainer" style="height:55vh;width:100%;position:relative;background:#0a1220">
-      <canvas id="deckCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></canvas>
-      <div id="analiticaEmpty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#4a5568;font-size:.9rem;text-align:center;padding:24px">
-        <div style="font-size:2.5rem;margin-bottom:12px">📍</div>
-        <div>Selecciona una jornada y pulsa<br><strong>Cargar vista 3D</strong></div>
+
+      <!-- Contenedor MapLibre + deck.gl -->
+      <div id="mapLibreContainer">
+        <canvas id="deckCanvas"></canvas>
+        <div id="analiticaEmpty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#4a5568;font-size:.9rem;text-align:center;padding:24px">
+          <div style="font-size:2.5rem;margin-bottom:12px">📍</div>
+          <div>Selecciona una jornada y pulsa<br><strong>Cargar 3D</strong></div>
+        </div>
       </div>
-    </div>
-  </div><!-- /screen-analitica -->
+
+    </div><!-- /mapaGps3d -->
+
+  </div><!-- /screen-mapa -->
 
   <!-- SCREEN: MIS DATOS Y PRIVACIDAD (ARCO) -->
   <div class="screen" id="screen-arco">
@@ -2235,12 +2319,11 @@
   // ── TABS ─────────────────────────────────────────────────
   function switchTab(name) {
     document.querySelectorAll('.tab').forEach((t, i) => {
-      t.classList.toggle('active', ['dashboard','vehiculo','mapa','analitica'][i] === name);
+      t.classList.toggle('active', ['dashboard','vehiculo','mapa'][i] === name);
     });
     document.querySelectorAll('.screen').forEach(s => {
       s.classList.toggle('active', s.id === 'screen-' + name);
     });
-    // Mostrar botón back en tabs secundarios
     const btnBack = $('btnBack');
     if (name === 'dashboard') {
       btnBack.classList.remove('visible');
@@ -2254,7 +2337,25 @@
         initMapa();
       }, 50);
     }
-    if (name === 'analitica') cargarJornadasSelector();
+  }
+
+  // ── MAPA: switcher interno Histórico / GPS 3D ─────────────
+  let _mapaMode = 'historico';
+
+  function setMapaMode(mode) {
+    _mapaMode = mode;
+    $('modeHistorico').classList.toggle('active', mode === 'historico');
+    $('modeGps3d').classList.toggle('active', mode === 'gps3d');
+    $('mapaHistorico').style.display = mode === 'historico' ? 'flex' : 'none';
+    $('mapaGps3d').classList.toggle('active', mode === 'gps3d');
+
+    if (mode === 'historico') {
+      // Resincronizar Leaflet si ya estaba inicializado
+      setTimeout(() => { if (mapaInstance) mapaInstance.invalidateSize(); }, 50);
+    }
+    if (mode === 'gps3d') {
+      cargarJornadasSelector();
+    }
   }
 
   // ── VEHÍCULO ─────────────────────────────────────────────
